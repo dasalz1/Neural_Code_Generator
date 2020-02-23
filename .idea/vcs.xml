@@ -3,6 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/contextual_autocomplete" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/contextual_autocomplete/github/tensorflow-vgg" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/contextual_autocomplete/github/react" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/contextual_autocomplete/github/tensorflow" vcs="Git" />
   </component>
 </project>
