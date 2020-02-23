@@ -1,2 +1,6 @@
 /Retrieve-and-Edit-Framework/datasets/*
 scrape_github/
+DataClass/repo_files/
+DataClass/__pycache__/
+untitled.py
+untitled2.py
