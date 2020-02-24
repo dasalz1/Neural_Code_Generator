@@ -1,4 +1,5 @@
-import glob, os, re
+import glob, os, re, csv
+from string import Template
 
 CODE_TYPE = ".py"
 
@@ -234,3 +235,32 @@ def get_lines_from_source(source,
     if remove_empty_lines_from_source:
         lines = [line for line in lines if len(line.strip()) > 0]
     return lines
+
+def get_urls_from_github(num_repos):
+    urls = []
+    page = 1
+    while len(urls) < num_repos:
+        url = "https://api.github.com/search/repositories?q=tensorflow+" \
+             + "language:python&sort=stars&order=desc&per_page=100&page={}".format(page)
+        response = requests.get(url)
+        repos = response.json()
+        urls.extend([repo["clone_url"] for repo in repos["items"]])
+        page += 1
+
+    urls = urls[:num_repos]
+    print(f"[.] Collected {len(urls)} URLs.")
+    return urls
+
+
+def get_urls_from_csv(path_csv):
+    url_template = Template('https://github.com/$url.git')
+    urls = []
+    with open(path_csv) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for i, row in enumerate(csv_reader):
+            if i == 0:
+                pass
+            else:
+                urls.append(url_template.substitute(url=row[0]))
+    print(f'Read {len(urls)} urls from csv file')
+    return urls
