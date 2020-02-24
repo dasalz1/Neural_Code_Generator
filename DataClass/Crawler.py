@@ -14,8 +14,8 @@ class Crawler:
 	def __init__(self):
 		pass
 
-	def _generate_pair_dataset_from_url(self, url, output_dir = '.', filename_ending='_line_pairs', tokenizing=False, tokens=None, tokenize_threads=None, tokenize_lock=None):
-		
+	def _generate_pair_dataset_from_url(self, url, output_dir = '.', filename_ending='_line_pairs', tokenizing=False, tokens=None, tokenize_lock=None):
+		current_token_threads = []
 		name = url.split('/')[-1][:-4]
 		repo_path = os.path.join(output_dir, name)
 		if os.path.exists(repo_path):
@@ -40,8 +40,10 @@ class Crawler:
 		    if lines == []: continue
 
 		    if tokenizing:
-		    	tokenize_threads.append(Thread(target=threaded_tokenizer, args=(lines, tokenize_lock, tokens,)))
-		    	tokenize_threads[-1].start()
+		    	current_token_threads.append(Thread(target=threaded_tokenizer, args=(lines, tokenize_lock, tokens,)))
+		    	current_token_threads[-1].start()
+		    	# tokenize_threads.append(Thread(target=threaded_tokenizer, args=(lines, tokenize_lock, tokens,)))
+		    	# tokenize_threads[-1].start()
 
 		    y = pd.DataFrame(lines)
 		    y.columns = ['line']
@@ -53,6 +55,8 @@ class Crawler:
 		all_lines = pd.concat([pd.DataFrame(np.array([all_lines.shape[0], None]).reshape(1, -1), columns=all_lines.columns), all_lines], axis=0)
 		all_lines.to_csv(name + filename_ending + '.csv', header=None, index=None)
 		os.system("rm -rf %s " % name)
+		for tokenize_thread in current_token_threads:
+			tokenize_thread.join()
 
 	# assumes dir is a path to a directory whose subfolders are the repos
 	def generate_pair_datasets(self, url_csv='repos.csv', output_dir = './repo_files', tokenizing=False, repo_threading=True):
