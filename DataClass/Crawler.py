@@ -55,7 +55,7 @@ class Crawler:
 		os.system("rm -rf %s " % name)
 
 	# assumes dir is a path to a directory whose subfolders are the repos
-	def generate_pair_datasets(self, url_csv=Noneoutput_dir = './repo_files', tokenizing=False, repo_threading=True):
+	def generate_pair_datasets(self, url_csv='repos.csv', output_dir = './repo_files', tokenizing=False, repo_threading=True):
 		try:
 			os.mkdir(output_dir)
 		except:
