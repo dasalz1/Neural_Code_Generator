@@ -52,7 +52,7 @@ class Dataset:
 
 		repos = next(os.walk(repo_directory))[1]
 
-		for repo in repos[4:7]:
+		for repo in repos:
 			print("Starting repo %s" % repo)
 			if repo.startswith('.'): continue
 
