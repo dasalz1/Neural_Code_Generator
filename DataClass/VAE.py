@@ -16,6 +16,48 @@ import numpy as np
 
 from "****placeholder****" import EncoderInput, EncoderOutput, VMFVAEWrapper, AgendaMaker
 
+class MultiVocabIndices(SequenceBatch):
+    """A marker class, indicating that SequenceBatch has the following dimensions:
+    
+    Attributes:
+        values (Variable): has shape (batch_size, seq_length, num_vocabs)
+        mask (Variable): has shape (batch_size, seq_length)
+    """
+    pass
+
+def base_plus_copy_indices(words, dynamic_vocabs, base_vocab, volatile=False):
+    """Compute base + copy indices.
+    
+    Args:
+        words (list[list[unicode]])
+        dynamic_vocabs (list[HardCopyDynamicVocab])
+        base_vocab (HardCopyVocab)
+        volatile (bool)
+    Returns:
+        MultiVocabIndices
+    """
+    unk = base_vocab.UNK
+    copy_seqs = []
+    for seq, dyna_vocab in izip(words, dynamic_vocabs):
+        word_to_copy = dyna_vocab.word_to_copy_token
+        normal_copy_seq = []
+        for w in seq:
+            normal_copy_seq.append(word_to_copy.get(w, unk))
+        copy_seqs.append(normal_copy_seq)
+
+    # each SeqBatch.values has shape (batch_size, seq_length)
+    base_indices = SequenceBatch.from_sequences(words, base_vocab, volatile=volatile)
+    copy_indices = SequenceBatch.from_sequences(copy_seqs, base_vocab, volatile=volatile)
+
+    assert_tensor_equal(base_indices.mask, copy_indices.mask)
+
+    # has shape (batch_size, seq_length, 2)
+    concat_values = torch.stack([base_indices.values, copy_indices.values], 2)
+
+    return MultiVocabIndices(concat_values, base_indices.mask)
+
+
+
 class TargetVAEEncoder(Module):
     def __init__(self, word_dim, agenda_dim, hidden_dim, num_layers, num_inputs):
         """Construct Encoder.
@@ -103,3 +145,5 @@ class TargetVAEEncoder(Module):
         vae_agenda, vae_loss = self.vae_wrap(context_agenda, True)
 
         return EncoderOutput(all_channel_embeds, vae_agenda, encoder_input.token_embedder), vae_loss
+
+    
