@@ -78,7 +78,7 @@ class Crawler:
 				check_threads(repo_threads)
 
 			if repo_threading:
-				repo_threads.append(Thread(target=self._generate_pair_dataset_from_repo, args=(url,#repo_directory+'/'+repo, 
+				repo_threads.append(Thread(target=self._generate_pair_dataset_from_url, args=(url,#repo_directory+'/'+repo, 
 																								output_dir,
 																								'_line_pairs',
 																								tokenizing, 
