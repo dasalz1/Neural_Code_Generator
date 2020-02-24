@@ -86,7 +86,7 @@ class Dataset:
 			for t in tokenize_threads:
 				t.join()
 
-			with open(output_dir + '/' + '_tokens.pickle', 'wb') as f:
+			with open(output_dir + '/' + 'all_tokens.pickle', 'wb') as f:
 				pickle.dump(tokens, f)
 		
 
