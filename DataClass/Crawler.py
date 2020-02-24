@@ -5,7 +5,7 @@ from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from_csv
 from threading import Lock, Thread
 
-MAX_THREADS = 2	#160
+MAX_THREADS = 64	#160
 
 
 
@@ -31,7 +31,7 @@ class Crawler:
 
 		print("Finished repo %s" % name)
 		sources = read_data(name)
-		if len(sources) == 0: 
+		if (sources==None) or (len(sources) == 0):
 			os.system("rm -rf %s " % name)
 			return
 		all_lines = None
@@ -42,8 +42,6 @@ class Crawler:
 		    if tokenizing:
 		    	current_token_threads.append(Thread(target=threaded_tokenizer, args=(lines, tokenize_lock, tokens,)))
 		    	current_token_threads[-1].start()
-		    	# tokenize_threads.append(Thread(target=threaded_tokenizer, args=(lines, tokenize_lock, tokens,)))
-		    	# tokenize_threads[-1].start()
 
 		    y = pd.DataFrame(lines)
 		    y.columns = ['line']
@@ -77,7 +75,7 @@ class Crawler:
 
 		os.chdir(output_dir)
 
-		for urls_processed, url in enumerate(urls):
+		for urls_processed, url in enumerate(urls[:250000]):
 			while(len(repo_threads) == MAX_THREADS):
 				check_threads(repo_threads)
 
@@ -87,7 +85,6 @@ class Crawler:
 																								'_line_pairs',
 																								tokenizing, 
 																								tokens, 
-																								tokenize_threads, 
 																								tokenize_lock)))
 				repo_threads[-1].start()
 			else:
@@ -95,7 +92,6 @@ class Crawler:
 															output_dir=output_dir, 
 															tokenizing=tokenizing, 
 															tokens=tokens, 
-															tokenize_threads=tokenize_threads, 
 															tokenize_lock=tokenize_lock)
 			# save current tokens in case error down the line
 			if (urls_processed+1) % 1000 == 0:
