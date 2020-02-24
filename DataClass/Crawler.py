@@ -73,7 +73,7 @@ class Crawler:
 
 		os.chdir(output_dir)
 
-		for url in [urls[20]] + urls[22:25]:
+		for urls_processed, url in enumerate(urls):
 			while(len(repo_threads) == MAX_THREADS):
 				check_threads(repo_threads)
 
@@ -93,6 +93,9 @@ class Crawler:
 															tokens=tokens, 
 															tokenize_threads=tokenize_threads, 
 															tokenize_lock=tokenize_lock)
+			# save current tokens in case error down the line
+			if (urls_processed+1) % 1000 == 0:
+				pickle.dump(tokens, open('all_tokens.pickle', 'wb'))
 
 		if repo_threading:
 			for r_t in repo_threads:
@@ -103,8 +106,7 @@ class Crawler:
 			for t in tokenize_threads:
 				t.join()
 
-			with open('all_tokens.pickle', 'wb') as f:
-				pickle.dump(tokens, f)
+			pickle.dump(tokens, open('all_tokens.pickle', 'wb'))
 		
 
 	def extract_examples_line_by_line(self, source):  # If line, no need to filter based on length
