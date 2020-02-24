@@ -5,14 +5,9 @@ from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained
 from threading import Lock, Thread
 
-def threaded_tokenizer(lines, lock, tokens):
-	for line in lines:
-		line_tokens = tokenize_fine_grained(line)
-		for token in line_tokens:
-			if token in tokens: continue
-			lock.acquire()
-			tokens[token] = tokens.get(token, len(tokens))
-			lock.release()
+MAX_THREADS = 2#160
+
+
 
 class Dataset:
 
@@ -56,9 +51,13 @@ class Dataset:
 			repo_threads = []
 
 		repos = next(os.walk(repo_directory))[1]
-		for repo in repos[4:8]:	
+
+		for repo in repos[4:7]:
 			print("Starting repo %s" % repo)
 			if repo.startswith('.'): continue
+
+			while(len(repo_threads) == MAX_THREADS):
+				check_threads(repo_threads)
 
 			if repo_threading:
 				repo_threads.append(Thread(target=self._generate_pair_dataset_from_repo, args=(repo_directory+'/'+repo, 
@@ -97,3 +96,23 @@ class Dataset:
 	        return []
 	    
 	    return lines
+
+
+def check_threads(repo_threads):
+	spawn_new = False
+	for idx in reversed(range(len(repo_threads))):
+		if not repo_threads[idx].is_alive():
+			del repo_threads[idx]
+			spawn_new = True
+
+	return spawn_new
+
+
+def threaded_tokenizer(lines, lock, tokens):
+	for line in lines:
+		line_tokens = tokenize_fine_grained(line)
+		for token in line_tokens:
+			if token in tokens: continue
+			lock.acquire()
+			tokens[token] = tokens.get(token, len(tokens))
+			lock.release()
