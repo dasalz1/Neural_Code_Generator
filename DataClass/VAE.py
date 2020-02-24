@@ -14,7 +14,7 @@ from gtd.ml.torch.utils import NamedTupleLike
 from gtd.ml.torch.utils import GPUVariable
 import numpy as np
 
-from editor_code.copy_editor.encoder import EncoderInput, EncoderOutput, VMFVAEWrapper, AgendaMaker
+from "****placeholder****" import EncoderInput, EncoderOutput, VMFVAEWrapper, AgendaMaker
 
 class TargetVAEEncoder(Module):
     def __init__(self, word_dim, agenda_dim, hidden_dim, num_layers, num_inputs):
