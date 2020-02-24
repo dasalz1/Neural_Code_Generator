@@ -50,12 +50,16 @@ def read_file(path):
 def read_dir(path):
     num_file = 0
     sources = []
+    # filenames = []
     for filename in glob.iglob(os.path.join(path, "**/*.py"), recursive=True):
         if not filename.endswith(CODE_TYPE): continue
         num_file += 1
         with open(filename, "r") as f:
             sources.append(preprocess_source(f.read()))
-    return sources, num_file
+
+        # filenames.append(filename)
+
+    return sources
 
 
 ###############################################################################
