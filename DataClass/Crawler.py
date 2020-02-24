@@ -5,7 +5,7 @@ from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from_csv
 from threading import Lock, Thread
 
-MAX_THREADS = 64	#160
+MAX_THREADS = 128	#160
 
 
 
@@ -15,22 +15,25 @@ class Crawler:
 		pass
 
 	def _generate_pair_dataset_from_url(self, url, output_dir = '.', filename_ending='_line_pairs', tokenizing=False, tokens=None, tokenize_lock=None):
-		current_token_threads = []
-		name = url.split('/')[-1][:-4]
-		repo_path = os.path.join(output_dir, name)
-		if os.path.exists(repo_path):
-			print(f'Skipping existing repository: {name}')
-		else:
-			print(f'Cloning: {name}')
-			t = Thread(target=os.system, args=("git clone {}".format(url),))
-			t.start()
-			t.join(30)
-			# probably has a password so just ignore this repo
-			if t.is_alive(): 
-				return
+		try:
+			current_token_threads = []
+			name = url.split('/')[-1][:-4]
+			repo_path = os.path.join(output_dir, name)
+			if os.path.exists(repo_path):
+				print(f'Skipping existing repository: {name}')
+			else:
+				print(f'Cloning: {name}')
+				t = Thread(target=os.system, args=("git clone {}".format(url),))
+				t.start()
+				t.join(30)
+				# probably has a password so just ignore this repo
+				if t.is_alive(): 
+					return
 
-		print("Finished repo %s" % name)
-		sources = read_data(name)
+			print("Finished repo %s" % name)
+			sources = read_data(name)
+		except:
+			return
 		if (sources==None) or (len(sources) == 0):
 			os.system("rm -rf %s " % name)
 			return
