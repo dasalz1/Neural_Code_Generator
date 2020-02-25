@@ -76,7 +76,7 @@ class Crawler:
 			repo_threads = []
 
 		urls = get_urls_from_csv(url_csv)
-		urls = shuffle(urls)
+		shuffle(urls)
 
 		os.chdir(output_dir)
 
