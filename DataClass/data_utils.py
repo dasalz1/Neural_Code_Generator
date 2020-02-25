@@ -1,4 +1,4 @@
-import glob, os, re, csv
+import glob, os, re, csv, logging
 from string import Template
 
 CODE_TYPE = ".py"
@@ -264,3 +264,18 @@ def get_urls_from_csv(path_csv):
                 urls.append(url_template.substitute(url=row[0]))
     print(f'Read {len(urls)} urls from csv file')
     return urls
+
+
+# Logger
+def set_logger(log_path):
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    if not logger.handlers:
+        file_handler = logging.FileHandler(log_path)
+        file_handler.setFormatter((logging.Formatter('%(asctime)s:%(levelname)s: %(message)s')))
+        logger.addHandler(file_handler)
+
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(stream_handler)
