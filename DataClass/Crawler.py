@@ -4,8 +4,9 @@ import os, pickle
 from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from_csv
 from threading import Lock, Thread
+from random import shuffle
 
-MAX_THREADS = 128	#160
+MAX_THREADS = 64	#160
 
 
 
@@ -29,7 +30,7 @@ class Crawler:
 				# probably has a password so just ignore this repo
 				if t.is_alive(): 
 					return
-
+ 
 			print("Finished repo %s" % name)
 			sources = read_data(name)
 		except:
@@ -75,6 +76,7 @@ class Crawler:
 			repo_threads = []
 
 		urls = get_urls_from_csv(url_csv)
+		urls = shuffle(urls)
 
 		os.chdir(output_dir)
 
