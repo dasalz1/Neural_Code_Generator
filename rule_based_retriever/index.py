@@ -20,7 +20,7 @@ app = Flask(__name__)
 CORS(app)
 
 app.config['SECRET_KEY'] = 'fe093b0354f9ba0b1237a5e36f58caf55cc9f5682c2627b7463c30f0bbd97672'  # noqa
-opt = opts.get_params(path = str(pathlib.Path.cwd()  / 'github_data' / 'tensorflow-vgg'))
+opt = opts.get_params(p = str(pathlib.Path.cwd()  / 'github_data' / 'tensorflow-vgg'))
 
 
 # Regex
@@ -714,7 +714,7 @@ def construct_dataset_edit(opt,
     return dataset_edit
 
 
-def generate_datasets(opt):
+def generate_datasets(opt, max_lines = 10000):
     """
     Check if processed datasets exist.
 
@@ -733,7 +733,7 @@ def generate_datasets(opt):
         sources, num_file = read_data(opt.path)
 
         dataset = construct_dataset(sources)  # D_proj = {(x, y)}
-        if len(dataset) > 10000:
+        if len(dataset) > max_lines:
             print(f"[generate_datasets] Skipping too large project (|dataset| = {len(dataset)})")
             dataset_edit = []
         else:

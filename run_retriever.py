@@ -1,11 +1,54 @@
 import ray
 ray.init()
 import pickle, os, math
-import pathlib, configargparse, logging
-from rule_based_retriever.index import construct_examples_with_suffix, get_suffix, rank_based_on_distance, \
-    generate_datasets, generate_html, collect_code_with_edits, read_data
+from itertools import filterfalse
+from tqdm import tqdm
+import pathlib, logging
+from rule_based_retriever.index import *
 from DataClass.data_utils import set_logger
 from collections import namedtuple
+
+def generate_datasets(opt, max_lines = 10000):
+    """
+    Check if processed datasets exist.
+
+    If so, read. Otherwise, generate and save to the path.
+    """
+    print(f"\n[generate_datasets] Processing {opt.path}")
+    options = to_string_opt(opt)
+    path_dataset = os.path.join(opt.path, f"dataset_{options}.p")
+    path_dataset_edit = os.path.join(opt.path, f"dataset_edit_{options}.p")
+
+    if os.path.exists(path_dataset) and os.path.exists(path_dataset_edit) and not opt.overwrite:
+        print("[generate_datasets] Read from pickled files")
+        dataset = read_from_pickle(path_dataset)
+        dataset_edit = read_from_pickle(path_dataset_edit)
+    else:
+        sources, num_file = read_data(opt.path)
+
+        dataset = construct_dataset(sources)  # D_proj = {(x, y)}
+        if len(dataset) > max_lines:
+            print(f"[generate_datasets] Skipping too large project (|dataset| = {len(dataset)})")
+            dataset_edit = []
+        else:
+            dataset_edit = [ray.remote(opt, example) for example in dataset]
+            res = ray.get(dataset_edit)
+            dataset_edit = list(filterfalse(lambda x: len(x) == 0, res)) #D_edit = {(x, y, x', y')}
+
+            print(f"\n[generate_datasets] Number of examples: {len(dataset)} ({len(set(dataset))} unique examples)")
+            print(f"[generate_datasets] Number of examples for edit: {len(dataset_edit)} ({len(set(dataset_edit))} unique examples)\n")
+
+            # dataset_edit = construct_dataset_edit(opt, dataset)  # D_edit = {(x, y, x', y')}
+
+            # Save datasets for future use
+            if opt.save:
+                save_as_pickle(path_dataset, dataset)
+                save_as_pickle(path_dataset_edit, dataset_edit)
+
+    print(f"\n[generate_datasets] Number of examples: {len(dataset)} ({len(set(dataset))} unique examples)")
+    print(f"[generate_datasets] Number of examples for edit: {len(dataset_edit)} ({len(set(dataset_edit))} unique examples)\n")
+
+    return dataset, dataset_edit
 
 def get_params(p, debug = False, save = True, overwrite = False, verbose = False,
                unit = 'line', min_len = 10, distance_metric_x = 'nc',
@@ -31,7 +74,12 @@ def load_saved_datasets(dataset_path, dataset_edit_path = None):
         dataset = pickle.load(f)
     f.close()
     return dataset, dataset_edit
-#
+
+def save_pickle(filename, obj):
+    with open(filename, 'wb') as file:
+        pickle.dump(obj, file , protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+
 def run_example(example, examples_with_suffix, opt):
 
     # Process example
@@ -64,66 +112,58 @@ def run_example(example, examples_with_suffix, opt):
     }
     return data
 
-def main(ds, opt, top_k = 10):
-    examples_with_suffix = construct_examples_with_suffix(ds)
+@ray.remote
+def main(line, opt, examples_with_suffix, i, top_k = 10):
     all_data = {}
-    for i, line in enumerate(ds):
-        data = run_example(line, examples_with_suffix, opt)
-        all_data[(i, line[0], line[1])] = data['example_edits'][:top_k]
+    data = run_example(line, examples_with_suffix, opt)
+    all_data[(i, line[0], line[1])] = data['example_edits'][:top_k]
     return all_data
 
-@ray.remote
+def to_iterator(obj_ids):
+    while obj_ids:
+        done, obj_ids = ray.wait(obj_ids)
+        yield ray.get(done[0])
+
 def parallel_retriever(subdirectory):
-    # parser = configargparse.ArgumentParser(description="run_retriever.py")
-    # system_opts(parser, subdirectory)
-    # opt = parser.parse_args()
     opt = get_params(str(subdirectory))
     print(opt)
     logging.info(f'Params is : {opt}')
     print("[main] Executing main function with options")
     sources, num_files = read_data(opt.path)
-    dataset, dataset_edit = generate_datasets(opt, max_lines = 100000)
+    dataset = construct_dataset(sources)  # D_proj = {(x, y)}
 
-    html = generate_html(sources)  # For rendering
-    code_with_edits = collect_code_with_edits(dataset_edit, html)  # For rendering
     examples_with_suffix = construct_examples_with_suffix(dataset)  # For metadata
+    dir_name = opt.path.split('/')[-1]
+    logging.info(f"Processing Directory {dir_name} ... ")
 
-    logging.info(f"Processing Directory {opt.path.split('/')[-1]} ... ")
-    logging.info(f'Total number of files processed: {num_files}')
-    logging.info(f'Total number of examples: {len(dataset)}')
-    try:
-        logging.info(f'Total number of example edits: {len(dataset_edit)} ({len(dataset_edit) / len(dataset) * 100:.2f}%)')
-    except:
-        print(f"Error For {opt.path.split('/')[-1]}")
-    logging.info(f'Total number of code with edits: {len(code_with_edits)} \n')
-
-    result = {
-        'sources': sources,
-        'num_files': num_files,
-        'dataset': dataset,
-        'dataset_edit': dataset_edit,
-        'html': html,
-        'code_with_edits': code_with_edits,
-        'examples_with_suffix': examples_with_suffix
-    }
-    output = main(dataset, opt)
-    return output
+    output = [main.remote(line, opt, examples_with_suffix, i) for i, line in enumerate(dataset)]
+    result = [x for x in tqdm(to_iterator(output), total = len(output)) if len(x) != 0 ]
+    if opt.save:
+        fname_dataraw = ''.join([str(opt.path), '_', 'dataset.pkl'])
+        fname_edit_output = ''.join([str(opt.path), '_', 'dataset_edit.pkl'])
+        save_pickle(fname_dataraw, dataset)
+        save_pickle(fname_edit_output, result)
+    return result
 
 if __name__ == '__main__':
-    # edit_path = pathlib.Path.cwd() /'github_data' / 'tensorflow-vgg' / 'dataset_edit_u_line__d_metric_x_nc__d_thre_x_inf__d_metric_y_c__d_thre_y_inf__n_1__max_can_1.p'
-    # ds_path = pathlib.Path.cwd() / 'github_data' / 'tensorflow-vgg' / 'dataset_u_line__d_metric_x_nc__d_thre_x_inf__d_metric_y_c__d_thre_y_inf__n_1__max_can_1.p'
-    #
-    # ds, ds_edit = load_saved_datasets(ds_path, edit_path)
-    #
-    # all_data = main(ds)
-    log_dir = pathlib.Path.cwd() / 'logs'
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
 
-    set_logger(log_dir / 'rule_based.log')
+    # log_dir = pathlib.Path.cwd() / 'logs'
+    # if not os.path.exists(log_dir):
+    #     os.makedirs(log_dir)
+
+    output_dir = pathlib.Path.cwd() / 'output'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # set_logger(log_dir / 'rule_based.log')
     p = pathlib.Path.cwd() / 'github_data'
     subdirs = [x for x in p.iterdir() if x.is_dir()]
-    result = [parallel_retriever.remote(str(d)) for d in subdirs]
-    retrieved_ex = ray.get(result)
-    # result = parallel_retriever(str(subdirs[0]))
+    retrieved_examples = {}
+    for i, subdir in enumerate(subdirs):
+        name = str(subdir).split('/')[-1]
+        if i % 100 == 0:
+            print(f'Completed {i // len(subdirs)}')
+        retrieved_examples[subdir] = parallel_retriever(subdir)
 
+    filename = ''.join([to_string_opt(opt), '.pkl'])
+    save_pickle(retrieved_examples, filename)
