@@ -155,7 +155,7 @@ class Crawler:
 			if repo_new != repo:
 				os.system("mv %s %s" % (filepath + '/' + repo, filepath + '/' + repo_new))
 
-			lines = pd.read_csv(filepath + '/' + repo_new)
+			lines = pd.read_csv(filepath + '/' + repo_new).fillna(NO_CONTEXT_WORD)
 
 			num_lines = int(lines.columns[0])
 			lines = lines.iloc[:, 1]
@@ -194,12 +194,7 @@ def check_threads(threads):
 
 def threaded_tokenizer(lines, lock, tokens, max_line_sz):
 	for line in lines:
-		try:
-			line_tokens = tokenize_fine_grained(line)
-		except:
-			print("This line is broken")
-			print(line)
-			return
+		line_tokens = tokenize_fine_grained(line)
 		if len(line_tokens) > max_line_sz[0]:
 			max_line_sz[0] = len(line_tokens)
 		for token in line_tokens:
