@@ -5,8 +5,12 @@ from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from_csv
 from threading import Lock, Thread
 from random import shuffle
+from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD
 
-MAX_THREADS = 64	#160
+MAX_REPO_THREADS = 64#160
+MAX_TOKENIZE_THREADS = 128
+MAX_LINES = 100#10000
+SPLITTER_RANGE = 10
 
 
 
@@ -44,7 +48,8 @@ class Crawler:
 		    if lines == []: continue
 
 		    if tokenizing:
-		    	current_token_threads.append(Thread(target=threaded_tokenizer, args=(lines, tokenize_lock, tokens,)))
+		    	max_line_sz = [0]
+		    	current_token_threads.append(Thread(target=threaded_tokenizer, args=(lines, tokenize_lock, tokens, max_line_sz,)))
 		    	current_token_threads[-1].start()
 
 		    y = pd.DataFrame(lines)
@@ -61,16 +66,20 @@ class Crawler:
 			tokenize_thread.join()
 
 	# assumes dir is a path to a directory whose subfolders are the repos
-	def generate_pair_datasets(self, url_csv='repos.csv', output_dir = './repo_files', tokenizing=False, repo_threading=True):
+	def generate_pair_datasets(self, url_csv='repos.csv', output_dir = './repo_files', tokenizing=False):
 		try:
 			os.mkdir(output_dir)
 		except:
 			pass
 
 		full_path = os.getcwd()
-		tokenize_threads = [] if tokenizing else None
-		tokenize_lock = Lock() if tokenizing else None
-		tokens = {} if tokenizing else None
+		tokenize_threads = []
+		tokenize_lock = Lock()
+		tokens = {}
+		tokens[PAD_WORD] = PAD_IDX
+		tokens[END_WORD] = END_IDX
+		tokens[START_WORD] = START_IDX
+		tokens[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
 
 		if repo_threading:
 			repo_threads = []
@@ -81,23 +90,16 @@ class Crawler:
 		os.chdir(output_dir)
 
 		for urls_processed, url in enumerate(urls[:250000]):
-			while(len(repo_threads) == MAX_THREADS):
+			while(len(repo_threads) == MAX_REPO_THREADS):
 				check_threads(repo_threads)
 
-			if repo_threading:
-				repo_threads.append(Thread(target=self._generate_pair_dataset_from_url, args=(url,#repo_directory+'/'+repo, 
+			repo_threads.append(Thread(target=self._generate_pair_dataset_from_url, args=(url,#repo_directory+'/'+repo, 
 																								output_dir,
 																								'_line_pairs',
 																								tokenizing, 
 																								tokens, 
 																								tokenize_lock)))
-				repo_threads[-1].start()
-			else:
-				self._generate_pair_dataset_from_repo(repo_directory+'/' + repo, 
-															output_dir=output_dir, 
-															tokenizing=tokenizing, 
-															tokens=tokens, 
-															tokenize_lock=tokenize_lock)
+			repo_threads[-1].start()
 			# save current tokens in case error down the line
 			if (urls_processed+1) % 1000 == 0:
 				pickle.dump(tokens, open('all_tokens.pickle', 'wb'))
@@ -111,6 +113,8 @@ class Crawler:
 			for t in tokenize_threads:
 				t.join()
 
+			with open('max_line_size.txt', 'a') as f:
+				f.write(str(max_line_sz[0]))
 			pickle.dump(tokens, open('all_tokens.pickle', 'wb'))
 		
 
@@ -122,20 +126,66 @@ class Crawler:
 	    
 	    return lines
 
+	# filepath is directory containing line pairs of csvs for repos
+	def tokenize_from_files(self, filepath='.', tokens_filename='all_tokens', output_dir=None):
+		tokens = {}
+		tokens[PAD_WORD] = PAD_IDX
+		tokens[END_WORD] = END_IDX
+		tokens[START_WORD] = START_IDX
+		tokens[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
 
-def check_threads(repo_threads):
+		tokenize_threads = []
+		tokenize_lock = Lock()
+
+		repos = next(os.walk(filepath))[2]
+		max_line_sz = [0]
+		for repo in repos:
+			if not repo.endswith('.csv'): continue
+			while(len(tokenize_threads) == MAX_TOKENIZE_THREADS):
+				check_threads(tokenize_threads)
+
+			lines = pd.read_csv(repo)
+
+			num_lines = int(lines.columns[0])
+			lines = lines.iloc[:, 1]
+
+			if num_lines > MAX_LINES:
+				intermediate_size = int(num_lines/SPLITTER_RANGE)
+    			
+				ranges = [(val, val+intermediate_size) for val in range(0, num_lines, intermediate_size)]
+				ranges[-1] = (ranges[-1][0], num_lines)
+				for start, end in ranges:
+					tokenize_threads.append(Thread(target=threaded_tokenizer, args=(lines.iloc[start:end], tokenize_lock, tokens, max_line_sz,)))
+					tokenize_threads[-1].start()
+    			
+			else:
+				tokenize_threads.append(Thread(target=threaded_tokenizer, args=(lines, tokenize_lock, tokens, max_line_sz,)))
+				tokenize_threads[-1].start()
+
+		for tokenize_thread in tokenize_threads:
+			tokenize_thread.join()
+
+
+		with open('max_line_size.txt', 'a') as f:
+			f.write(str(max_line_sz[0]))
+		pickle.dump(tokens, open(output_dir if output_dir else filepath + '/' + tokens_filename + '.pickle', 'wb'))
+
+
+def check_threads(threads):
 	spawn_new = False
-	for idx in reversed(range(len(repo_threads))):
-		if not repo_threads[idx].is_alive():
-			del repo_threads[idx]
+	for idx in reversed(range(len(threads))):
+		if not threads[idx].is_alive():
+			del threads[idx]
 			spawn_new = True
 
 	return spawn_new
 
 
-def threaded_tokenizer(lines, lock, tokens):
+def threaded_tokenizer(lines, lock, tokens, max_line_sz):
 	for line in lines:
 		line_tokens = tokenize_fine_grained(line)
+		if len(line_tokens) > max_line_sz[0]:
+			max_line_sz[0] = len(line_tokens)
 		for token in line_tokens:
 			if token in tokens: continue
 			lock.acquire()
