@@ -194,6 +194,8 @@ def check_threads(threads):
 
 def threaded_tokenizer(lines, lock, tokens, max_line_sz):
 	for line in lines:
+		print("about to be line")
+		print(line)
 		line_tokens = tokenize_fine_grained(line)
 		if len(line_tokens) > max_line_sz[0]:
 			max_line_sz[0] = len(line_tokens)
