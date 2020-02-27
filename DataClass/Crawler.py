@@ -151,7 +151,7 @@ class Crawler:
 			if repo_new != repo:
 				os.system("mv %s %s" % (repo, repo_new))
 
-			lines = pd.read_csv(curr_dir + '/' + repo_new)
+			lines = pd.read_csv(filepath + '/' + repo_new)
 
 			num_lines = int(lines.columns[0])
 			lines = lines.iloc[:, 1]
@@ -173,9 +173,9 @@ class Crawler:
 			tokenize_thread.join()
 
 
-		with open(curr_dir + '/' + 'max_line_size.txt', 'a') as f:
+		with open(output_dir if output_dir else filepath + '/' + 'max_line_size.txt', 'a') as f:
 			f.write(str(max_line_sz[0]))
-		pickle.dump(tokens, open(output_dir if output_dir else curr_dir + '/' + tokens_filename + '.pickle', 'wb'))
+		pickle.dump(tokens, open(output_dir if output_dir else filepath + '/' + tokens_filename + '.pickle', 'wb'))
 
 
 def check_threads(threads):
