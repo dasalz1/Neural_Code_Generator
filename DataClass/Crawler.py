@@ -5,7 +5,7 @@ from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from_csv
 from threading import Lock, Thread
 from random import shuffle
-from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKOWN_IDX, UNKNOWN_WORD
+from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD
 
 MAX_REPO_THREADS = 64#160
 MAX_TOKENIZE_THREADS = 128
@@ -199,10 +199,9 @@ def threaded_tokenizer(lines, lock, tokens, max_line_sz, filepath):
 		line_tokens = tokenize_fine_grained(line)
 		if len(line_tokens) > max_line_sz[0]:
 			max_line_sz[0] = len(line_tokens)
-			open(filepath+'max_line_size.txt', 'a').write(len(line_tokens)) + str(line) + '\n')
+			open(filepath+'max_line_size.txt', 'a').write(str(len(line_tokens)) + str(line) + '\n')
 		for token in line_tokens:
-			# if token in tokens: 
-				# continue
+			if tokens.get(token, 0) > 1: continue
 			lock.acquire()
 			tokens[token] = tokens.get(token, 0) + 1#len(tokens))
 			lock.release()
