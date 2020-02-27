@@ -9,6 +9,7 @@ NO_CONTEXT_WORD = 'OSOFo'
 PAD_WORD = '<PAD>'
 START_WORD = '<BOS>'
 END_WORD = '<EOS>'
+UNKNOWN_WORD = = '<UNK>'
 
 tokens_file = './DataClass/token_dict.pickle'
 tokens_dict = pickle.load(open(tokens_file, 'rb'))
@@ -16,9 +17,11 @@ tokens_dict[NO_CONTEXT_WORD] = len(tokens_dict)
 tokens_dict[PAD_WORD] = len(tokens_dict)
 tokens_dict[START_WORD] = len(tokens_dict)
 tokens_dict[END_WORD] = len(tokens_dict)
+token_dict[UNKNOWN_WORD] = UNKNOWN_IDX
 PAD_IDX = tokens_dict[PAD_WORD]
 BOS_IDX = tokens_dict[START_WORD]
 EOS_IDX = tokens_dict[END_WORD]
+UNKNOWN_IDX = tokens_dict[UNKNOWN_IDX]
 
 
 
@@ -48,10 +51,19 @@ class PairDatasetLazy(Dataset):
 def batch_collate_fn(data):
         x, y = zip(*data)
         
-        x = pd.DataFrame(x).replace(tokens_dict).fillna(PAD_IDX)
-        y = pd.DataFrame(y).replace(tokens_dict).fillna(PAD_IDX)
-        batch_xs = torch.LongTensor(x.values)
-        batch_ys = torch.LongTensor(y.values)
+        x = pd.DataFrame(x).fillna(PAD_WORD)
+        y = pd.DataFrame(y).fillna(PAD_WORD)
+
+        x = np.where(x.isin(tokens_dict.keys()), x.replace(tokens_dict), UNKNOWN_IDX).astype('int64')
+        y = np.where(y.isin(tokens_dict.keys()), y.replace(tokens_dict), UNKNOWN_IDX).astype('int64')
+
+        batch_xs = torch.LongTensor(x)
+        batch_ys = torch.LongTensor(y)
+        # x = pd.DataFrame(x).replace(tokens_dict).fillna(PAD_IDX)
+        # y = pd.DataFrame(y).replace(tokens_dict).fillna(PAD_IDX)
+
+        # batch_xs = torch.LongTensor(x.values)
+        # batch_ys = torch.LongTensor(y.values)
         return batch_xs, batch_ys
     
     
