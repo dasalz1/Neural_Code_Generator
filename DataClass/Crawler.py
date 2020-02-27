@@ -140,7 +140,11 @@ class Crawler:
 		repos = next(os.walk(filepath))[2]
 		max_line_sz = [0]
 		curr_dir = os.getcwd()
+		num_repos = len(repos)
+		count = 0
 		for repo in repos:
+			count += 1
+			print("On repo [%d/%d]" % (count, num_repos))
 			repo = str(repo)
 			if not repo.endswith('.csv'): continue
 			while(len(tokenize_threads) == MAX_TOKENIZE_THREADS):
