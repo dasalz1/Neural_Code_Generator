@@ -166,6 +166,8 @@ class Crawler:
 				ranges = [(val, val+intermediate_size) for val in range(0, num_lines, intermediate_size)]
 				ranges[-1] = (ranges[-1][0], num_lines)
 				for start, end in ranges:
+					while(len(tokenize_threads) == MAX_TOKENIZE_THREADS):
+						check_threads(tokenize_threads)
 					tokenize_threads.append(Thread(target=threaded_tokenizer, args=(lines.iloc[start:end], tokenize_lock, tokens, max_line_sz,)))
 					tokenize_threads[-1].start()
     			
