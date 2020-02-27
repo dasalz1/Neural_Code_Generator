@@ -60,7 +60,7 @@ class Crawler:
 		    all_lines = pd.concat([all_lines, pair], axis=0)
 
 		all_lines = pd.concat([pd.DataFrame(np.array([all_lines.shape[0], None]).reshape(1, -1), columns=all_lines.columns), all_lines], axis=0)
-		all_lines.to_csv(name + filename_ending + '.csv', header=None, index=None)
+		all_lines.to_csv(name.replace('.', '_') + filename_ending + '.csv', header=None, index=None)
 		os.system("rm -rf %s " % name)
 		for tokenize_thread in current_token_threads:
 			tokenize_thread.join()
@@ -140,11 +140,17 @@ class Crawler:
 		repos = next(os.walk(filepath))[2]
 		max_line_sz = [0]
 		for repo in repos:
+			repo = str(repo)
 			if not repo.endswith('.csv'): continue
 			while(len(tokenize_threads) == MAX_TOKENIZE_THREADS):
 				check_threads(tokenize_threads)
 
-			lines = pd.read_csv(repo)
+
+			repo_new = repo[:-4].replace('.', '_') + '.csv'
+			if repo_new != repo:
+				os.system("mv %s %s" % (repo, repo_new))
+
+			lines = pd.read_csv(repo_new)
 
 			num_lines = int(lines.columns[0])
 			lines = lines.iloc[:, 1]
