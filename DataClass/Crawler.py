@@ -5,7 +5,7 @@ from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from_csv
 from threading import Lock, Thread
 from random import shuffle
-from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD
+from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKOWN_IDX, UNKNOWN_WORD
 
 MAX_REPO_THREADS = 64#160
 MAX_TOKENIZE_THREADS = 128
@@ -80,6 +80,7 @@ class Crawler:
 		tokens[END_WORD] = END_IDX
 		tokens[START_WORD] = START_IDX
 		tokens[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
+		tokens[UNKOWN_WORD] = UNKOWN_IDX
 
 		if repo_threading:
 			repo_threads = []
@@ -129,10 +130,10 @@ class Crawler:
 	# filepath is directory containing line pairs of csvs for repos
 	def tokenize_from_files(self, filepath='.', tokens_filename='all_tokens', output_dir=None):
 		tokens = {}
-		tokens[PAD_WORD] = PAD_IDX
-		tokens[END_WORD] = END_IDX
-		tokens[START_WORD] = START_IDX
-		tokens[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
+		# tokens[PAD_WORD] = PAD_IDX
+		# tokens[END_WORD] = END_IDX
+		# tokens[START_WORD] = START_IDX
+		# tokens[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
 
 		tokenize_threads = []
 		tokenize_lock = Lock()
@@ -203,5 +204,5 @@ def threaded_tokenizer(lines, lock, tokens, max_line_sz, filepath):
 			# if token in tokens: 
 				# continue
 			lock.acquire()
-			tokens[token] = tokens.get(token, len(tokens))
+			tokens[token] = tokens.get(token, 0) + 1#len(tokens))
 			lock.release()
