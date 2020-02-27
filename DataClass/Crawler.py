@@ -149,7 +149,7 @@ class Crawler:
 
 			repo_new = repo[:-4].replace('.', '_') + '.csv'
 			if repo_new != repo:
-				os.system("mv %s %s" % (repo, repo_new))
+				os.system("mv %s %s" % (filepath + '/' + repo, filepath + '/' + repo_new))
 
 			lines = pd.read_csv(filepath + '/' + repo_new)
 
