@@ -1,36 +1,15 @@
 import pandas as pd
 import torch, os, pickle
 from torch.utils.data import Dataset, ConcatDataset, DataLoader
-from DataClass.data_utils import tokenize_fine_grained, create_vocab_dictionary
+from DataClass.data_utils import tokenize_fine_grained, create_vocab_dictionary, preprocess_tokens, preprocess_context
 import numpy as np
-from DataClass.Constants import NO_CONTEXT_WORD, UNKNOWN_IDX, PAD_WORD, START_WORD, END_WORD, SEP_CONTEXT_WORD, SEP_PAIR_WORD, SEP_RET_WORD
+from DataClass.Constants import NO_CONTEXT_WORD, UNKNOWN_IDX
 
 tokens_file = './repo_files/all_tokens.pickle'
 tokens_dict = pickle.load(open(tokens_file, 'rb'))
 word2idx, idx2word = create_vocab_dictionary(tokens_dict)
 # UNKNOWN_IDX = word2idx[UNKNOWN_WORD]
 MAX_LINE_LENGTH = 128
-
-
-def preprocess_tokens(tokens, max_dim):
-    tokens = [START_WORD] + tokens
-    n = len(tokens) + 1
-    # minus one since end word needs to go on too
-    tokens = tokens[:min(n, max_dim-1)] + [END_WORD] + [PAD_WORD]*max(0, max_dim-n)
-    return tokens
-
-def preprocess_context(context, n, max_dim):
-    context_tokens = preprocess_tokens(tokenize_fine_grained(context[0, 0]), max_dim)
-    context_tokens += [SEP_CONTEXT_WORD]
-    
-    for idx in range(n-1):
-        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2-1]), max_dim) + [SEP_PAIR_WORD]
-        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2]), max_dim) + [SEP_RET_WORD]
-    
-    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -2]), max_dim) + [SEP_PAIR_WORD]
-    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -1]), max_dim)
-    return context_tokens
-
 
 class PairDataset(Dataset):
 
@@ -77,7 +56,6 @@ class RetrieveDataset(Dataset):
         context_tokens = preprocess_context(x[:, :-1], self.n_retrieved, self.max_dim)
         y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, -1]), self.max_dim)
         return context_tokens, y_tokens
-        # return np.array(x_tokens).reshape(-1, 1), np.array(y_tokens).reshape(-1, 1)
 
 
 

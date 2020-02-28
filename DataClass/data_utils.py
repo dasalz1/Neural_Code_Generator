@@ -16,6 +16,26 @@ code_ptr = re.compile(r"([^a-zA-Z0-9])")
 whitespace_ptr = re.compile(r"(\s+)")
 
 
+def preprocess_tokens(tokens, max_dim):
+    tokens = [START_WORD] + tokens
+    n = len(tokens) + 1
+    # minus one since end word needs to go on too
+    tokens = tokens[:min(n, max_dim-1)] + [END_WORD] + [PAD_WORD]*max(0, max_dim-n)
+    return tokens
+
+def preprocess_context(context, n, max_dim):
+    context_tokens = preprocess_tokens(tokenize_fine_grained(context[0, 0]), max_dim)
+    context_tokens += [SEP_CONTEXT_WORD]
+    
+    for idx in range(n-1):
+        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2-1]), max_dim) + [SEP_PAIR_WORD]
+        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2]), max_dim) + [SEP_RET_WORD]
+    
+    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -2]), max_dim) + [SEP_PAIR_WORD]
+    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -1]), max_dim)
+    return context_tokens
+
+
 def create_vocab_dictionary(tokens_dict):
     idx_to_word = {}
     word_to_idx = {}
