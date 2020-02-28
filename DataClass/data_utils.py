@@ -59,7 +59,7 @@ def create_vocab_dictionary(tokens_dict):
     idx_to_word[PAD_IDX] = PAD_WORD
     idx_to_word[END_IDX] = END_WORD
     idx_to_word[START_IDX] = START_WORD
-    idx_to_word[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
+    idx_to_word[NO_CONTEXT_IDX] = NO_CONTEXT_IDX
     idx_to_word[UNKNOWN_IDX] = UNKNOWN_WORD
     idx_to_word[SEP_CONTEXT_IDX] = SEP_CONTEXT_WORD
     idx_to_word[SEP_PAIR_IDX] = SEP_PAIR_WORD

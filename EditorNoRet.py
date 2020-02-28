@@ -1,9 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from DataClass.Constants import PAD_IDX
-from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_epoch, tb_mle_batch
+from DataClass.Constants import PAD_IDX, UNKNOWN_WORD
+from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_epoch, tb_mle_batch, tb_bleu_validation_epoch
 from tqdm import tqdm
+import numpy as np
+import pandas as pd
+from DataClass.torchData import idx2word
+from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
+from nltk.translate import bleu
 
 class EditorNoRetrievalTrainer:
 
@@ -27,7 +32,7 @@ class EditorNoRetrievalTrainer:
 			  loss = loss.masked_select(non_pad_mask).sum()  # average later
 			else:
 				
-			  loss = F.cross_entropy(pred, target, ignore_index=PAD_IDX, reduction='sum')    
+			  loss = F.cross_entropy(pred, target, ignore_index=PAD_IDX, reduction='sum')
 			return loss
 		
 		loss = compute_loss(pred, target, smoothing)
@@ -36,11 +41,46 @@ class EditorNoRetrievalTrainer:
 		non_pad_mask = target.ne(PAD_IDX)
 		n_correct = pred_max.eq(target)
 		n_correct = n_correct.masked_select(non_pad_mask).sum().item()
-
 		return loss, n_correct
+	
+	def validate_BLEU(self, model, validation_loader, epoch, tb=None):
+		model.eval()
+
+		bleu_scores = []
+		accuracies = []
+		with torch.no_grad():
+			for batch in tqdm(validation_loader):
+				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+				trg_ys = pd.DataFrame(batch_ys[:, 1:])
+
+				pred = model(batch_xs, batch_ys[:, :-1])
+				
+				# pred_max = pred.max(1)[1]
+				pred_max = pred.max(2)[1]
+				pred = pd.DataFrame(pred_max.numpy())
+
+				target = batch_ys[:, 1:].contiguous().view(-1)
+
+				non_pad_mask = target.ne(PAD_IDX)
+				n_correct = pred_max.contiguous().view(-1).eq(target)
+				n_correct = n_correct.masked_select(non_pad_mask).sum().item()
+				n_word = non_pad_mask.sum().item()
+				accuracies.append(n_correct/n_word)
+
+				pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+				trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+
+				trg_words = np.expand_dims(trg_words, axis=1)
+				bleu_scores.append(corpus_bleu(trg_words.tolist(), pred_words.tolist(), smoothing_function=SmoothingFunction().method1))
+			
+			avg_bleu = np.mean(bleu_scores)
+			avg_accuracy = np.mean(accuracies)
+			print("Validation BLEU score: %.4f, Accuracy: %.4f" % (avg_bleu, accuracy))
+			if tb is not None:
+				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, optimizer, data_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
+	def train(self, model, optimizer, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
 		curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)
 		model.train()
@@ -76,10 +116,14 @@ class EditorNoRetrievalTrainer:
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
 					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
+
+				
+			self.validate_BLEU(model, validation_loader, epoch, tb)
 			
 			loss_per_word = total_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
 
 			if tb is not None:
 				tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
+
 

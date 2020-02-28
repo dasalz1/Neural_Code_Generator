@@ -67,8 +67,8 @@ def batch_collate_fn(data):
         x = pd.DataFrame(x)
         y = pd.DataFrame(y)
         
-        x = np.where(x.isin(tokens_dict.keys()), x.replace(tokens_dict), UNKNOWN_IDX).astype('int64')
-        y = np.where(y.isin(tokens_dict.keys()), y.replace(tokens_dict), UNKNOWN_IDX).astype('int64')
+        x = np.where(x.isin(word2idx.keys()), x.replace(word2idx), UNKNOWN_IDX).astype('int64')
+        y = np.where(y.isin(word2idx.keys()), y.replace(word2idx), UNKNOWN_IDX).astype('int64')
 
         batch_xs = torch.LongTensor(x)
         batch_ys = torch.LongTensor(y)

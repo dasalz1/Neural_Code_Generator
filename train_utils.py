@@ -40,6 +40,17 @@ def tb_mle_epoch(tb, loss_per_word, accuracy, epoch):
         global_step=epoch
     )
 
+def tb_bleu_validation_epoch(tb, bleu, accuracy, epoch):
+    tb.add_scalars(
+        {
+            "validation_bleu" : bleu,
+            "accuracy" : accuracy,
+        },
+        group="train",
+        sub_group="epoch",
+        global_step=epoch
+    )
+
 def tb_mle_batch(tb, total_loss, n_word_total, n_word_correct, epoch, batch_idx, data_len):
     tb.add_scalars(
         {
