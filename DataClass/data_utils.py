@@ -1,5 +1,6 @@
 import glob, os, re, csv, logging
 from string import Template
+from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD, SEP_CONTEXT_WORD, SEP_CONTEXT_IDX, SEP_PAIR_WORD, SEP_PAIR_IDX, SEP_RET_WORD, SEP_RET_IDX
 
 CODE_TYPE = ".py"
 
@@ -13,6 +14,47 @@ number_with_alpha_ptr = re.compile(r'(?<=[a-zA-Z])([-+]?\d*\.\d+|\d+)')  # split
 string_ptr = re.compile(r'".*?"|\'.*?\'')
 code_ptr = re.compile(r"([^a-zA-Z0-9])")
 whitespace_ptr = re.compile(r"(\s+)")
+
+
+def create_vocab_dictionary(tokens_dict):
+    idx_to_word = {}
+    word_to_idx = {}
+
+    if PAD_WORD in tokens_dict: del tokens_dict[PAD_WORD]
+    if NO_CONTEXT_WORD in tokens_dict: del tokens_dict[NO_CONTEXT_WORD]
+    if START_WORD in tokens_dict: del tokens_dict[START_WORD]
+    if END_WORD in tokens_dict: del tokens_dict[END_WORD]
+    if UNKNOWN_WORD in tokens_dict: del tokens_dict[UNKNOWN_WORD]
+
+
+    # tokens[PAD_WORD] = PAD_IDX
+    word_to_idx[PAD_WORD] = PAD_IDX
+    word_to_idx[END_WORD] = END_IDX
+    word_to_idx[START_WORD] = START_IDX
+    word_to_idx[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
+    word_to_idx[UNKNOWN_WORD] = UNKNOWN_IDX
+    word_to_idx[SEP_CONTEXT_WORD] = SEP_CONTEXT_IDX
+    word_to_idx[SEP_PAIR_WORD] = SEP_PAIR_IDX
+    word_to_idx[SEP_RET_WORD] = SEP_RET_IDX
+    idx_to_word[PAD_IDX] = PAD_WORD
+    idx_to_word[END_IDX] = END_WORD
+    idx_to_word[START_IDX] = START_WORD
+    idx_to_word[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
+    idx_to_word[UNKNOWN_IDX] = UNKNOWN_WORD
+    idx_to_word[SEP_CONTEXT_IDX] = SEP_CONTEXT_WORD
+    idx_to_word[SEP_PAIR_IDX] = SEP_PAIR_WORD
+    idx_to_word[SEP_RET_IDX] = SEP_RET_WORD
+
+    embedding_idx = SEP_RET_IDX+1
+    for word, count in tokens_dict.items():
+        if count < 2: continue
+        word_to_idx[word] = embedding_idx
+        idx_to_word[embedding_idx] = word
+        embedding_idx+=1
+
+    return word_to_idx, idx_to_word
+
+    # {word:idx for idx, word in enumerate(tokens_dict)}
 
 
 def preprocess_source(source):
