@@ -27,6 +27,7 @@ args = parser.parse_args()
 
 CUDA_VISIBLE_DEVICES = [0, 1]
 VOCAB_SIZE = len(word2idx)
+num_validation_repos = 30
 
 if torch.cuda.device_count() > 1:
   print("Using", torch.cuda.device_count(), "GPUs...")
@@ -37,7 +38,12 @@ tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 
 repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files]),
+data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
+						batch_size=args.batch_size,
+						shuffle=True,
+						collate_fn=batch_collate_fn)
+
+validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
 						batch_size=args.batch_size,
 						shuffle=True,
 						collate_fn=batch_collate_fn)
@@ -55,5 +61,5 @@ trainer = EditorNoRetrievalTrainer(device)
 optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
-trainer.train(model, optimizer, data_loader, tb=tb, epochs=args.epochs)
+trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 

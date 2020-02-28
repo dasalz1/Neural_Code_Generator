@@ -116,7 +116,6 @@ class EditorNoRetrievalTrainer:
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
 					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
-
 				
 			self.validate_BLEU(model, validation_loader, epoch, tb)
 			
