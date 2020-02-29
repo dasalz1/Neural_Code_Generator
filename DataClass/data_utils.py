@@ -35,6 +35,20 @@ def preprocess_context(context, n, max_dim):
     context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -1]), max_dim)
     return context_tokens
 
+def fix_quote_strings(v):
+    idx = v.find('","')
+    x, y = v[1:idx], v[idx+3:-1]
+    if "\'" in x:
+        x = x.replace('"', "'").replace("\t", ' ')
+    else:
+        x = x.replace('""', '"').replace("'", '"').replace('\t', ' ')
+
+    if "\'" in y:
+        y = y.replace('"', "'").replace("\t", ' ')
+    else:
+        y = y.replace('""', '"').replace("'", '"').replace('\t', ' ')
+    
+    return [[x, y]]
 
 def create_vocab_dictionary(tokens_dict):
     idx_to_word = {}

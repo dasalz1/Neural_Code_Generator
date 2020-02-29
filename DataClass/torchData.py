@@ -1,9 +1,11 @@
 import pandas as pd
-import torch, os, pickle
+import torch, os, pickle, warnings, csv
 from torch.utils.data import Dataset, ConcatDataset, DataLoader
-from DataClass.data_utils import tokenize_fine_grained, create_vocab_dictionary, preprocess_tokens, preprocess_context
+from DataClass.data_utils import tokenize_fine_grained, create_vocab_dictionary, preprocess_tokens, preprocess_context, fix_quote_strings
 import numpy as np
 from DataClass.Constants import NO_CONTEXT_WORD, UNKNOWN_IDX
+
+warnings.simplefilter('ignore', pd.errors.ParserWarning)
 
 tokens_file = './repo_files/all_tokens.pickle'
 tokens_dict = pickle.load(open(tokens_file, 'rb'))
@@ -28,18 +30,23 @@ class PairDataset(Dataset):
         try:
             x = next(pd.read_csv(self.filename,
                                 skiprows=idx * self.chunksize+1,
-                                chunksize=self.chunksize, delim_whitespace=True, header=None)).fillna(NO_CONTEXT_WORD).values
-
-            if len(x[0] > 2):
-                x[0, 1] = ''.join(x[0, 1:])
+                                chunksize=self.chunksize, header=None, dtype=str)).fillna(NO_CONTEXT_WORD).values
+            
         except:
-            print(idx)
-            print(self.filename)
-            return
+            x = next(pd.read_csv(self.filename,
+                                skiprows=idx * self.chunksize+1,
+                                chunksize=self.chunksize, header=None,
+                                sep=',\s+', quoting=csv.QUOTE_ALL, dtype=str)).fillna(NO_CONTEXT_WORD).values
 
+            x = np.array(fix_quote_strings(x[0, 0]))
+
+        
         x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
         y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
         return x_tokens, y_tokens
+            # print(idx)
+            # print(self.filename)
+            # return None, None
         # return np.array(x_tokens).reshape(-1, 1), np.array(y_tokens).reshape(-1, 1)
 
 class RetrieveDataset(Dataset):
@@ -70,6 +77,7 @@ class RetrieveDataset(Dataset):
 # for meta-learning, turn RetrieveDataset into dataloader and get list of dataloaders of which batch size is k-shot
     
 def batch_collate_fn(data):
+        # data = list(filter(lambda z : z is not None, data))
         x, y = zip(*data)
         
         x = pd.DataFrame(x)
