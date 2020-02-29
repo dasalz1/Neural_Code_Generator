@@ -11,7 +11,7 @@ from datetime import date
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--filepath", default='./repo_files', type=str)
+parser.add_argument("--filepath", default='../repo_files', type=str)
 parser.add_argument("--exp_name", default='EditorPairTrain', type=str)
 parser.add_argument("--unique_id", default=str(date.today()), type=str)
 parser.add_argument("--num_layers", default=6, type=int)
@@ -21,13 +21,13 @@ parser.add_argument("--value_dimension", default=64, type=int)
 parser.add_argument("--dropout", default=0.1, type=float)
 parser.add_argument("--d_word_vec", default=512, type=int)
 parser.add_argument("--inner_dimension", default=2048, type=int)
-parser.add_argument("--batch_size", default=128, type=int)
-parser.add_argument("--epochs", default=15, type=int)
+parser.add_argument("--batch_size", default=1024, type=int)
+parser.add_argument("--epochs", default=10, type=int)
 args = parser.parse_args()
 
 CUDA_VISIBLE_DEVICES = [0, 1]
 VOCAB_SIZE = len(word2idx)
-num_validation_repos = 30
+num_validation_repos = 1#30
 
 if torch.cuda.device_count() > 1:
   print("Using", torch.cuda.device_count(), "GPUs...")

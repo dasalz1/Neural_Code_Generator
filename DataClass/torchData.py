@@ -25,9 +25,14 @@ class PairDataset(Dataset):
         return self.len
 
     def __getitem__(self, idx):
-        x = next(pd.read_csv(self.filename,
-                            skiprows=idx * self.chunksize+1,
-                            chunksize=self.chunksize, header=None)).fillna(NO_CONTEXT_WORD).values
+        try:
+            x = next(pd.read_csv(self.filename,
+                                skiprows=idx * self.chunksize+1,
+                                chunksize=self.chunksize, header=None)).fillna(NO_CONTEXT_WORD).values
+        except:
+            print('here')
+            idx = np.random.randint(0, self.len)
+            return self.__getitem__(idx)
 
         x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
         y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
