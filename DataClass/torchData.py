@@ -28,11 +28,14 @@ class PairDataset(Dataset):
         try:
             x = next(pd.read_csv(self.filename,
                                 skiprows=idx * self.chunksize+1,
-                                chunksize=self.chunksize, header=None)).fillna(NO_CONTEXT_WORD).values
+                                chunksize=self.chunksize, delim_whitespace=True, header=None)).fillna(NO_CONTEXT_WORD).values
+
+            if len(x[0] > 2):
+                x[0, 1] = ''.join(x[0, 1:])
         except:
-            print('here')
-            idx = np.random.randint(0, self.len)
-            return self.__getitem__(idx)
+            print(idx)
+            print(self.filename)
+            return
 
         x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
         y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
