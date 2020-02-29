@@ -27,7 +27,7 @@ args = parser.parse_args()
 
 CUDA_VISIBLE_DEVICES = [0, 1]
 VOCAB_SIZE = len(word2idx)
-num_validation_repos = 1#30
+num_validation_repos = 30
 
 if torch.cuda.device_count() > 1:
   print("Using", torch.cuda.device_count(), "GPUs...")
