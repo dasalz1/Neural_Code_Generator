@@ -46,13 +46,8 @@ class PairDataset(Dataset):
 
             x = np.array(fix_quote_strings(x[0, 0]))
 
-        try:
-            x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
-            y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
-        except:
-            print(self.filename)
-            print(idx)
-            print(x)
+        x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
+        y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
 
         x_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in x_tokens]
         y_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in y_tokens]
@@ -79,7 +74,12 @@ class RetrieveDataset(Dataset):
                             chunksize=self.chunksize, header=None, dtype=str)).fillna(NO_CONTEXT_WORD).values
 
         context_tokens = preprocess_context(x[:, :-1], self.n_retrieved, self.max_dim)
+
         y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, -1]), self.max_dim)
+
+        context_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in context_tokens]
+        y_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in y_tokens]
+
         return context_tokens, y_tokens
 
 
