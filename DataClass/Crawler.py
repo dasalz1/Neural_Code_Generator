@@ -6,8 +6,8 @@ from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from
 from threading import Lock, Thread
 # from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD
 
-MAX_REPO_THREADS = 1024#160
-MAX_TOKENIZE_THREADS = 128
+MAX_REPO_THREADS = 2048#160
+MAX_TOKENIZE_THREADS = 2048
 MAX_REPO_LINES = 100000
 MIN_REPO_LINES = 200
 MAX_TOKEN_LINES = 10000
@@ -91,10 +91,11 @@ class Crawler:
 
 		urls = get_urls_from_csv(url_csv)
 		random.shuffle(urls)
+		urls = urls[:500000]
 
 		os.chdir(output_dir)
 
-		for urls_processed, url in enumerate(urls):
+		for urls_processed, url in enumerate(urls[:250000]):
 			while(len(repo_threads) == MAX_REPO_THREADS):
 				check_threads(repo_threads)
 
