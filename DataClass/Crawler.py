@@ -4,18 +4,22 @@ import os, pickle, random
 from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from_csv
 from threading import Lock, Thread
+from multiprocessing import Process
+
 # from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD
 
-MAX_REPO_THREADS = 2048#160
+MAX_REPO_THREADS = 32#160
 MAX_TOKENIZE_THREADS = 2048
 MAX_REPO_LINES = 100000
-MIN_REPO_LINES = 200
+MIN_REPO_LINES = 100
 MAX_TOKEN_LINES = 10000
 SPLITTER_RANGE = 10
 MAX_LINE_CHARS = 128*10*2
 
-random.seed(12324)
-np.random.seed(12324)
+# random.seed(12325)
+# np.random.seed(12325)
+random.seed(12329)
+np.random.seed(12329)
 
 
 class Crawler:
@@ -27,15 +31,17 @@ class Crawler:
 		try:
 			name = url.split('/')[-1][:-4]
 			repo_path = os.path.join(output_dir, name)
-			if os.path.exists(repo_path):
+			if os.path.exists(repo_path) or os.path.exists(name.replace('.', '_') + filename_ending + '.csv'):
 				print(f'Skipping existing repository: {name}')
+				return
 			else:
 				print(f'Cloning: {name}')
-				t = Thread(target=os.system, args=("git clone {}".format(url),))
-				t.start()
-				t.join(30)
+				p = Process(target=os.system, args=("git clone {}".format(url),))
+				p.start()
+				p.join(30)
 				# probably has a password so just ignore this repo
-				if t.is_alive(): 
+				if p.is_alive(): 
+					p.terminate()
 					os.system("rm -rf %s " % name)
 					return
  
@@ -58,7 +64,7 @@ class Crawler:
 		    
 		    # y = y[y['line'].apply(lambda x: len(str(x).strip()) > 0)].apply(lambda x: len(str(x).strip()) < MAX_LINE_DIMENSION).reset_index(drop=True)# & (len(str(x).strip()) < MAX_LINE_DIMENSION))).reset_index(drop=True)    
 		    
-		    y = y[(y['line'].str.strip().str.rstrip().str.len() > 0) & (~y['line'].str.contains('import'))].reset_index(drop=True)
+		    y = y[(y['line'].str.lstrip().str.rstrip().str.len() > 0) & (~y['line'].str.contains('import'))].reset_index(drop=True)
 		    x = pd.concat([pd.DataFrame([""]), y['line'][:-1]]).reset_index(drop=True)
 		    pair = pd.concat([x, y], axis=1)
 		    
