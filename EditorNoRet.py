@@ -99,6 +99,8 @@ class EditorNoRetrievalTrainer:
 				loss, n_correct = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
 
 				loss.backward()
+				
+				torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
 				optimizer.step()
 
 				if scheduler:

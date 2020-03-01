@@ -7,9 +7,9 @@ from DataClass.Constants import NO_CONTEXT_WORD, UNKNOWN_IDX
 
 warnings.simplefilter('ignore', pd.errors.ParserWarning)
 
-tokens_file = '../all_tokens.pickle'
-tokens_dict = pickle.load(open(tokens_file, 'rb'))
-word2idx, idx2word = create_vocab_dictionary(tokens_dict)
+# tokens_file = '../all_tokens.pickle'
+# tokens_dict = pickle.load(open(tokens_file, 'rb'))
+word2idx, idx2word = create_vocab_dictionary(path='..', file='all_tokens.pickle', save=True)
 
 # UNKNOWN_IDX = word2idx[UNKNOWN_WORD]
 MAX_LINE_LENGTH = 128

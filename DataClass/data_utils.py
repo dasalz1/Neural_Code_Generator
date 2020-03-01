@@ -1,4 +1,4 @@
-import glob, os, re, csv, logging
+import glob, os, re, csv, logging, pickle
 from string import Template
 from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD, SEP_CONTEXT_WORD, SEP_CONTEXT_IDX, SEP_PAIR_WORD, SEP_PAIR_IDX, SEP_RET_WORD, SEP_RET_IDX
 
@@ -50,41 +50,48 @@ def fix_quote_strings(v):
     
     return [[x, y]]
 
-def create_vocab_dictionary(tokens_dict):
-    idx_to_word = {}
-    word_to_idx = {}
+def create_vocab_dictionary(path, file, save=True):
+    if os.path.exists(path+'/word2idx_tokens.pickle'):
+        return pickle.load(open(path+'/word2idx_tokens.pickle', 'rb')), pickle.load(open(path+'/idx2words_tokens.pickle', 'rb'))
+
+    tokens_dict = pickle.load(open(path+'/'+file, 'rb'))
+    idx2word = {}
+    word2idx = {}
 
     if PAD_WORD in tokens_dict: del tokens_dict[PAD_WORD]
     if NO_CONTEXT_WORD in tokens_dict: del tokens_dict[NO_CONTEXT_WORD]
     if START_WORD in tokens_dict: del tokens_dict[START_WORD]
     if END_WORD in tokens_dict: del tokens_dict[END_WORD]
     if UNKNOWN_WORD in tokens_dict: del tokens_dict[UNKNOWN_WORD]
-
-
-    # tokens[PAD_WORD] = PAD_IDX
-    word_to_idx[PAD_WORD] = PAD_IDX
-    word_to_idx[END_WORD] = END_IDX
-    word_to_idx[START_WORD] = START_IDX
-    word_to_idx[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
-    word_to_idx[UNKNOWN_WORD] = UNKNOWN_IDX
-    word_to_idx[SEP_CONTEXT_WORD] = SEP_CONTEXT_IDX
-    word_to_idx[SEP_PAIR_WORD] = SEP_PAIR_IDX
-    word_to_idx[SEP_RET_WORD] = SEP_RET_IDX
-    idx_to_word[PAD_IDX] = PAD_WORD
-    idx_to_word[END_IDX] = END_WORD
-    idx_to_word[START_IDX] = START_WORD
-    idx_to_word[NO_CONTEXT_IDX] = NO_CONTEXT_IDX
-    idx_to_word[UNKNOWN_IDX] = UNKNOWN_WORD
-    idx_to_word[SEP_CONTEXT_IDX] = SEP_CONTEXT_WORD
-    idx_to_word[SEP_PAIR_IDX] = SEP_PAIR_WORD
-    idx_to_word[SEP_RET_IDX] = SEP_RET_WORD
+    
+    word2idx[PAD_WORD] = PAD_IDX
+    word2idx[END_WORD] = END_IDX
+    word2idx[START_WORD] = START_IDX
+    word2idx[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
+    word2idx[UNKNOWN_WORD] = UNKNOWN_IDX
+    word2idx[SEP_CONTEXT_WORD] = SEP_CONTEXT_IDX
+    word2idx[SEP_PAIR_WORD] = SEP_PAIR_IDX
+    word2idx[SEP_RET_WORD] = SEP_RET_IDX
+    idx2word[PAD_IDX] = PAD_WORD
+    idx2word[END_IDX] = END_WORD
+    idx2word[START_IDX] = START_WORD
+    idx2word[NO_CONTEXT_IDX] = NO_CONTEXT_IDX
+    idx2word[UNKNOWN_IDX] = UNKNOWN_WORD
+    idx2word[SEP_CONTEXT_IDX] = SEP_CONTEXT_WORD
+    idx2word[SEP_PAIR_IDX] = SEP_PAIR_WORD
+    idx2word[SEP_RET_IDX] = SEP_RET_WORD
 
     embedding_idx = SEP_RET_IDX+1
     for word, count in tokens_dict.items():
-        if count < 2: continue
+        if count < 5: continue
         word_to_idx[word] = embedding_idx
         idx_to_word[embedding_idx] = word
         embedding_idx+=1
+
+
+    if save:
+        pickle.dump(word2idx, path+'/word2idx_tokens.pickle')
+        pickle.dump(idx2word, path+'/idx2word_tokens.pickle')
 
     return word_to_idx, idx_to_word
 

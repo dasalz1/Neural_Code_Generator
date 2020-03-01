@@ -9,6 +9,7 @@ from torch.utils.data import ConcatDataset, DataLoader
 import torch
 from datetime import date
 import argparse
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--filepath", default='../repo_files', type=str)
@@ -26,6 +27,9 @@ parser.add_argument("--epochs", default=10, type=int)
 args = parser.parse_args()
 
 def main(args):
+	np.random.seed(12324)
+	torch.manual_seed(12324)
+
 	VOCAB_SIZE = len(word2idx)
 	num_validation_repos = 30
 
@@ -33,17 +37,17 @@ def main(args):
 
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-	# data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
-	# 						batch_size=args.batch_size,
-	# 						shuffle=True,
-	# 						collate_fn=batch_collate_fn)
+	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
+							batch_size=args.batch_size,
+							shuffle=True,
+							collate_fn=batch_collate_fn)
 
-	data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30], batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn))
+	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
 
-	validation_loader = data_loader#DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
-							# batch_size=args.batch_size,
-							# shuffle=True,
-							# collate_fn=batch_collate_fn)
+	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
+							batch_size=args.batch_size,
+							shuffle=True,
+							collate_fn=batch_collate_fn)
 
 	num_iterations = len(data_loader)
 
@@ -54,20 +58,22 @@ def main(args):
 						trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True)
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+	if torch.cuda.is_available:
+		torch.backends.cudnn.deterministic=True
+		torch.backends.cudnn.benchmark = False
+		
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
-		model = nn.DataParallel(model)
+		model = torch.nn.DataParallel(model)
 	
 	model.to(device)
-
 
 	trainer = EditorNoRetrievalTrainer(device)
 	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
 	trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
-
-
 
 if __name__=='__main__':
 	main(args)

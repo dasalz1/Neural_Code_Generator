@@ -1,19 +1,21 @@
 import numpy as np
 import pandas as pd
-import os, pickle
+import os, pickle, random
 from DataClass.regex_utils import remove_comments, split_newlines
 from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from_csv
 from threading import Lock, Thread
-from random import shuffle
 # from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD
 
-MAX_REPO_THREADS = 64#160
+MAX_REPO_THREADS = 1024#160
 MAX_TOKENIZE_THREADS = 128
 MAX_REPO_LINES = 100000
 MIN_REPO_LINES = 200
 MAX_TOKEN_LINES = 10000
 SPLITTER_RANGE = 10
+MAX_LINE_CHARS = 128*10*2
 
+random.seed(12324)
+np.random.seed(12324)
 
 
 class Crawler:
@@ -44,6 +46,7 @@ class Crawler:
 		if (sources==None) or (len(sources) == 0):
 			os.system("rm -rf %s " % name)
 			return
+
 		all_lines = None
 		for source in sources:
 		    lines = self.extract_examples_line_by_line(source)
@@ -51,19 +54,26 @@ class Crawler:
 
 		    y = pd.DataFrame(lines)
 		    y.columns = ['line']
-		    y = y[y['line'].apply(lambda x: ((len(str(x).strip()) > 0) && (len(str(x).strip()) < 128))).reset_index(drop=True)    
+		    
+		    # y = y[y['line'].apply(lambda x: len(str(x).strip()) > 0)].apply(lambda x: len(str(x).strip()) < MAX_LINE_DIMENSION).reset_index(drop=True)# & (len(str(x).strip()) < MAX_LINE_DIMENSION))).reset_index(drop=True)    
+		    
+		    y = y[(y['line'].str.strip().str.rstrip().str.len() > 0) & (~y['line'].str.contains('import'))].reset_index(drop=True)
 		    x = pd.concat([pd.DataFrame([""]), y['line'][:-1]]).reset_index(drop=True)
 		    pair = pd.concat([x, y], axis=1)
+		    
+		    pair = pair[pair['line'].str.len() < MAX_LINE_CHARS].reset_index(drop=True)
+		    
 		    all_lines = pd.concat([all_lines, pair], axis=0)
 		    if all_lines.shape[0] > MAX_REPO_LINES:
-		    	os.system("rm -rf %s" % name)
-		    	return
+		    	break
+		    	# os.system("rm -rf %s" % name)
+		    	# return
 
 		if all_lines.shape[0] < MIN_REPO_LINES:
-	    	os.system("rm -rf %s" % name)
-	    	return
+			os.system("rm -rf %s" % name)
+			return
 
-    	all_lines = pd.concat([pd.DataFrame(np.array([all_lines.shape[0], None]).reshape(1, -1), columns=all_lines.columns), all_lines], axis=0)
+		all_lines = pd.concat([pd.DataFrame(np.array([all_lines.shape[0], None]).reshape(1, -1), columns=all_lines.columns), all_lines], axis=0)
 		all_lines.to_csv(name.replace('.', '_') + filename_ending + '.csv', header=None, index=None)
 		os.system("rm -rf %s" % name)
 
@@ -76,11 +86,11 @@ class Crawler:
 
 		full_path = os.getcwd()
 
-		if repo_threading:
-			repo_threads = []
+		# if repo_threading:
+		repo_threads = []
 
 		urls = get_urls_from_csv(url_csv)
-		shuffle(urls)
+		random.shuffle(urls)
 
 		os.chdir(output_dir)
 
@@ -92,9 +102,9 @@ class Crawler:
 																								output_dir,																								'_line_pairs',)))
 			repo_threads[-1].start()
 
-		if repo_threading:
-			for r_t in repo_threads:
-				r_t.join()
+		# if repo_threading:
+		for r_t in repo_threads:
+			r_t.join()
 		
 
 	def extract_examples_line_by_line(self, source):  # If line, no need to filter based on length
@@ -137,7 +147,7 @@ class Crawler:
 			num_lines = int(lines.columns[0])
 			lines = lines.iloc[:, 1]
 
-			if num_lines > MAX_LINES:
+			if num_lines > MAX_TOKEN_LINES:
 				intermediate_size = int(num_lines/SPLITTER_RANGE)
     			
 				ranges = [(val, val+intermediate_size) for val in range(0, num_lines, intermediate_size)]
@@ -159,7 +169,6 @@ class Crawler:
 
 		pickle.dump(tokens, open(output_dir if output_dir else filepath + '/' + tokens_filename + '.pickle', 'wb'))
 
-
 def check_threads(threads):
 	spawn_new = False
 	for idx in reversed(range(len(threads))):
@@ -176,7 +185,7 @@ def threaded_tokenizer(lines, lock, tokens, max_line_sz, filepath):
 			max_line_sz[0] = len(line_tokens)
 			open(filepath+'max_line_size.txt', 'a').write(str(len(line_tokens)) + '\n')
 		for token in line_tokens:
-			if tokens.get(token, 0) > 1: continue
-			lock.acquire()
+			# if tokens.get(token, 0) > 1: continue
+			# lock.acquire()
 			tokens[token] = tokens.get(token, 0) + 1#len(tokens))
-			lock.release()
+			# lock.release()
