@@ -10,6 +10,7 @@ warnings.simplefilter('ignore', pd.errors.ParserWarning)
 tokens_file = '../all_tokens.pickle'
 tokens_dict = pickle.load(open(tokens_file, 'rb'))
 word2idx, idx2word = create_vocab_dictionary(tokens_dict)
+
 # UNKNOWN_IDX = word2idx[UNKNOWN_WORD]
 MAX_LINE_LENGTH = 128
 
@@ -43,11 +44,11 @@ class PairDataset(Dataset):
         
         x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
         y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
+
+        x_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in x_tokens]
+        y_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in y_tokens]
+        
         return x_tokens, y_tokens
-            # print(idx)
-            # print(self.filename)
-            # return None, None
-        # return np.array(x_tokens).reshape(-1, 1), np.array(y_tokens).reshape(-1, 1)
 
 class RetrieveDataset(Dataset):
 
@@ -80,11 +81,11 @@ def batch_collate_fn(data):
         # data = list(filter(lambda z : z is not None, data))
         x, y = zip(*data)
         
-        x = pd.DataFrame(x)
-        y = pd.DataFrame(y)
+        x = pd.DataFrame(x).values.astype('int64')
+        y = pd.DataFrame(y).values.astype('int64')
         
-        x = np.where(x.isin(word2idx.keys()), x.replace(word2idx), UNKNOWN_IDX).astype('int64')
-        y = np.where(y.isin(word2idx.keys()), y.replace(word2idx), UNKNOWN_IDX).astype('int64')
+        # x = np.where(x.isin(word2idx.keys()), x.replace(word2idx), UNKNOWN_IDX).astype('int64')
+        # y = np.where(y.isin(word2idx.keys()), y.replace(word2idx), UNKNOWN_IDX).astype('int64')
 
         batch_xs = torch.LongTensor(x)
         batch_ys = torch.LongTensor(y)

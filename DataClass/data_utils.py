@@ -39,14 +39,14 @@ def fix_quote_strings(v):
     idx = v.find('","')
     x, y = v[1:idx], v[idx+3:-1]
     if "\'" in x:
-        x = x.replace('"', "'").replace("\t", ' ')
+        x = x.replace('"', "'")
     else:
-        x = x.replace('""', '"').replace("'", '"').replace('\t', ' ')
+        x = x.replace('""', '"').replace("'", '"')
 
     if "\'" in y:
-        y = y.replace('"', "'").replace("\t", ' ')
+        y = y.replace('"', "'")
     else:
-        y = y.replace('""', '"').replace("'", '"').replace('\t', ' ')
+        y = y.replace('""', '"').replace("'", '"')
     
     return [[x, y]]
 
