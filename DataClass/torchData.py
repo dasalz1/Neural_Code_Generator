@@ -33,6 +33,11 @@ class PairDataset(Dataset):
                                 skiprows=idx * self.chunksize+1,
                                 chunksize=self.chunksize, header=None, dtype=str)).fillna(NO_CONTEXT_WORD).values
             
+            
+            # something is broken here so just give filler
+            if len(x[0]) != 2:
+                idx = max(0, idx-1)
+                return self.__getitem__(self.len-1 if idx == 0 else idx)
         except:
             x = next(pd.read_csv(self.filename,
                                 skiprows=idx * self.chunksize+1,
@@ -41,9 +46,13 @@ class PairDataset(Dataset):
 
             x = np.array(fix_quote_strings(x[0, 0]))
 
-        
-        x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
-        y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
+        try:
+            x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
+            y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
+        except:
+            print(self.filename)
+            print(idx)
+            print(x)
 
         x_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in x_tokens]
         y_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in y_tokens]
