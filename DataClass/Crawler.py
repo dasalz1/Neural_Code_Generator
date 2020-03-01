@@ -36,6 +36,7 @@ class Crawler:
 				t.join(30)
 				# probably has a password so just ignore this repo
 				if t.is_alive(): 
+					os.system("rm -rf %s " % name)
 					return
  
 			print("Finished repo %s" % name)
@@ -69,7 +70,7 @@ class Crawler:
 		    	# os.system("rm -rf %s" % name)
 		    	# return
 
-		if all_lines.shape[0] < MIN_REPO_LINES:
+		if all_lines is not None and all_lines.shape[0] < MIN_REPO_LINES:
 			os.system("rm -rf %s" % name)
 			return
 
