@@ -25,43 +25,49 @@ parser.add_argument("--batch_size", default=1024, type=int)
 parser.add_argument("--epochs", default=10, type=int)
 args = parser.parse_args()
 
-CUDA_VISIBLE_DEVICES = [0, 1]
-VOCAB_SIZE = len(word2idx)
-num_validation_repos = 30
+def main(args):
+	VOCAB_SIZE = len(word2idx)
+	num_validation_repos = 30
 
-if torch.cuda.device_count() > 1:
-  print("Using", torch.cuda.device_count(), "GPUs...")
+	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
+	# data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
+	# 						batch_size=args.batch_size,
+	# 						shuffle=True,
+	# 						collate_fn=batch_collate_fn)
 
-repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
+	data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30], batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn))
 
-# data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
-# 						batch_size=args.batch_size,
-# 						shuffle=True,
-# 						collate_fn=batch_collate_fn)
+	validation_loader = data_loader#DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
+							# batch_size=args.batch_size,
+							# shuffle=True,
+							# collate_fn=batch_collate_fn)
 
-data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30], batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn))
+	num_iterations = len(data_loader)
 
-validation_loader = data_loader#DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
-						# batch_size=args.batch_size,
-						# shuffle=True,
-						# collate_fn=batch_collate_fn)
+	model = Transformer(n_src_vocab=VOCAB_SIZE, n_trg_vocab=VOCAB_SIZE, src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
+						d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
+						n_head=args.num_heads, d_k=args.key_dimension, d_v=args.value_dimension, dropout=args.dropout,
+						n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
+						trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True)
+	
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	if torch.cuda.device_count() > 1:
+		print("Using", torch.cuda.device_count(), "GPUs...")
+		model = nn.DataParallel(model)
+	
+	model.to(device)
 
-num_iterations = len(data_loader)
 
-model = torch.nn.DataParallel(Transformer(n_src_vocab=VOCAB_SIZE, n_trg_vocab=VOCAB_SIZE, src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
-					d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
-					n_head=args.num_heads, d_k=args.key_dimension, d_v=args.value_dimension, dropout=args.dropout,
-					n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
-					trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True).to(device))
+	trainer = EditorNoRetrievalTrainer(device)
+	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
+	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
+
+	trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 
-trainer = EditorNoRetrievalTrainer(device)
-optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
-trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
-
+if __name__=='__main__':
+	main(args)
