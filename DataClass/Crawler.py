@@ -6,7 +6,7 @@ from DataClass.data_utils import read_data, tokenize_fine_grained, get_urls_from
 from threading import Lock, Thread
 from multiprocessing import Process
 
-# from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD
+from DataClass.Constants import NO_CONTEXT_WORD#PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD
 
 MAX_REPO_THREADS = 32#160
 MAX_TOKENIZE_THREADS = 2048
