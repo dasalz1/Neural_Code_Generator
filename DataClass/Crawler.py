@@ -16,10 +16,10 @@ MAX_TOKEN_LINES = 10000
 SPLITTER_RANGE = 10
 MAX_LINE_CHARS = 128*10*2
 
-# random.seed(12325)
+# random.seed(12325)#123259#97853#3858191#1
 # np.random.seed(12325)
-random.seed(12329)
-np.random.seed(12329)
+random.seed(1)
+np.random.seed(1)
 
 
 class Crawler:
@@ -193,7 +193,7 @@ def threaded_tokenizer(lines, lock, tokens, max_line_sz, filepath):
 			max_line_sz[0] = len(line_tokens)
 			open(filepath+'max_line_size.txt', 'a').write(str(len(line_tokens)) + '\n')
 		for token in line_tokens:
-			# if tokens.get(token, 0) > 1: continue
-			# lock.acquire()
+			if token in tokens and tokens[token] > 5: continue
+			lock.acquire()
 			tokens[token] = tokens.get(token, 0) + 1#len(tokens))
-			# lock.release()
+			lock.release()

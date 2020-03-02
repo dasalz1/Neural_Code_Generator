@@ -87,6 +87,8 @@ class MetaTrainer:
 		dis.init_process_group(self.backend, rank=process, world_size=self.world_size)
 		self.meta_learners[process](self.meta_learners[0].model.state_dict(), data)
 
+
+	# dataloaders is list of the iterators of the dataloaders for each task
 	def train(self, data_loaders, optimizer, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000, num_iters=250000):
 
 		# curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)

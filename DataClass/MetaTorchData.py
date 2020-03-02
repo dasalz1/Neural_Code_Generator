@@ -65,7 +65,7 @@ class MetaRetrieved(Dataset):
 
             x = np.array(fix_quote_strings(x[0, 0]) if self.retrieve_context else fix_quote_strings_context(x[0, 0]))
 
-        # query_x, query_y = words2tokens(x)
+        
         query_x = [word2idx.get(token, UNKNOWN_IDX) for token in preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)]
 
         support_list_x = []
@@ -174,14 +174,6 @@ class MetaRepo(Dataset):
         query_y = torch.LongTensor(pd.DataFrame(query_y).values.astype('int64')).contiguous().view(1, -1)
         
         return support_x, support_y, query_x, query_y
-    
-
-# def createDataLoaderAllFiles(dataset_dir, dataset_class=PairDataset, shuffle=True, batch_size=128):
-#     datasets = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(dataset_dir))[2]))
-#     return DataLoader(ConcatDataset([dataset_class(dataset_dir + '/' + dataset, chunksize=batch_size) for dataset in datasets]), 
-#                         batch_size=batch_size, 
-#                         shuffle=shuffle, 
-#                         collate_fn=batch_collate_fn)
 
 
 
