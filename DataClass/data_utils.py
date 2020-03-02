@@ -28,31 +28,42 @@ def preprocess_context(context, n, max_dim):
     context_tokens += [SEP_CONTEXT_WORD]
     
     for idx in range(n-1):
-        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2-1]), max_dim) + [SEP_PAIR_WORD]
-        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2]), max_dim) + [SEP_RET_WORD]
+        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2+1]), max_dim) + [SEP_PAIR_WORD]
+        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2+2]), max_dim) + [SEP_RET_WORD]
     
-    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -2]), max_dim) + [SEP_PAIR_WORD]
-    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -1]), max_dim)
+    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -3]), max_dim) + [SEP_PAIR_WORD]
+    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -2]), max_dim)
     return context_tokens
+
+def check_quote_str(line):
+    if "\'" in line:
+        return line.replace('"', "'")
+    else:
+        return line.replace('""', '"').replace("'", '"')
 
 def fix_quote_strings(v):
     idx = v.find('","')
     x, y = v[1:idx], v[idx+3:-1]
-    if "\'" in x:
-        x = x.replace('"', "'")
-    else:
-        x = x.replace('""', '"').replace("'", '"')
-
-    if "\'" in y:
-        y = y.replace('"', "'")
-    else:
-        y = y.replace('""', '"').replace("'", '"')
+    x = check_quote_str(x)
+    y = check_quote_str(y)
     
     return [[x, y]]
 
+def fix_quote_strings_context(v, n):
+    idx = v.find('","')
+    x = check_quote_str(v[1:idx])
+    values = [x]
+    v = v[idx+3:]
+    for _ in range(n*2):
+        idx = v.find('","')
+        values.append(check_quote_str(v[:idx]))
+        v = v[idx+3:]
+    values.append(check_quote_str(v[:-1]))
+    return [values]
+
 def create_vocab_dictionary(path, file, save=True):
     if os.path.exists(path+'/word2idx_tokens.pickle'):
-        return pickle.load(open(path+'/word2idx_tokens.pickle', 'rb')), pickle.load(open(path+'/idx2words_tokens.pickle', 'rb'))
+        return pickle.load(open(path+'/word2idx_tokens.pickle', 'rb')), pickle.load(open(path+'/idx2word_tokens.pickle', 'rb'))
 
     tokens_dict = pickle.load(open(path+'/'+file, 'rb'))
     idx2word = {}
@@ -84,16 +95,16 @@ def create_vocab_dictionary(path, file, save=True):
     embedding_idx = SEP_RET_IDX+1
     for word, count in tokens_dict.items():
         if count < 5: continue
-        word_to_idx[word] = embedding_idx
-        idx_to_word[embedding_idx] = word
+        word2idx[word] = embedding_idx
+        idx2word[embedding_idx] = word
         embedding_idx+=1
 
 
     if save:
-        pickle.dump(word2idx, path+'/word2idx_tokens.pickle')
-        pickle.dump(idx2word, path+'/idx2word_tokens.pickle')
+        pickle.dump(word2idx, open(path+'/word2idx_tokens.pickle', 'wb'))
+        pickle.dump(idx2word, open(path+'/idx2word_tokens.pickle', 'wb'))
 
-    return word_to_idx, idx_to_word
+    return word2idx, idx2word
 
     # {word:idx for idx, word in enumerate(tokens_dict)}
 

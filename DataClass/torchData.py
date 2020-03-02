@@ -17,12 +17,13 @@ MAX_LINE_LENGTH = 128
 class PairDataset(Dataset):
 
     def __init__(self, filename):
-        
+        super(PairDataset).__init__()
         self.filename = filename
         self.chunksize = 1 # more than this requires reshaping in this class or collate function
         temp = next(pd.read_csv(self.filename, skiprows = 0, chunksize=1, header=None))
         self.max_dim = MAX_LINE_LENGTH
         self.len = int(temp.values[0][0] / self.chunksize)
+        self.num_cols = 2
         
     def __len__(self):
         return self.len
@@ -35,7 +36,7 @@ class PairDataset(Dataset):
             
             
             # something is broken here so just give filler
-            if len(x[0]) != 2:
+            if len(x[0]) != self.num_cols:
                 idx = max(0, idx-1)
                 return self.__getitem__(self.len-1 if idx == 0 else idx)
         except:
@@ -57,23 +58,38 @@ class PairDataset(Dataset):
 class RetrieveDataset(Dataset):
 
     def __init__(self, filename, chunksize, n_retrieved):
-        
+        super(RetrieveDataset).__init__()
+
         self.filename = filename
         self.chunksize = 1 # more than this and requires a lot more changes in collate fn
         temp = next(pd.read_csv(self.filename, skiprows = 0, chunksize=1, header=None))
         self.n_retrieved = n_retrieved
         self.max_dim = MAX_LINE_LENGTH
         self.len = int(temp.values[0][0] / self.chunksize)
+        self.num_cols = self.n_retrieved*2+2
         
     def __len__(self):
         return self.len
 
     def __getitem__(self, idx):
-        x = next(pd.read_csv(self.filename,
+        try:
+            x = next(pd.read_csv(self.filename,
                             skiprows=idx * self.chunksize+1,
                             chunksize=self.chunksize, header=None, dtype=str)).fillna(NO_CONTEXT_WORD).values
 
-        context_tokens = preprocess_context(x[:, :-1], self.n_retrieved, self.max_dim)
+                    # something is broken here so just give filler
+            if len(x[0]) != self.num_cols:
+                idx = max(0, idx-1)
+                return self.__getitem__(self.len-1 if idx == 0 else idx)
+        except:
+            x = next(pd.read_csv(self.filename,
+                                skiprows=idx * self.chunksize+1,
+                                chunksize=self.chunksize, header=None,
+                                sep=',\s+', quoting=csv.QUOTE_ALL, dtype=str)).fillna(NO_CONTEXT_WORD).values
+
+            x = np.array(fix_quote_strings_context(x[0, 0], self.n_retrieved))
+
+        context_tokens = preprocess_context(x, self.n_retrieved, self.max_dim)
 
         y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, -1]), self.max_dim)
 
