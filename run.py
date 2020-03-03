@@ -44,6 +44,7 @@ def main(args):
 							collate_fn=batch_collate_fn,
 							num_workers=16)
 
+	print("Finished creating data loader")
 	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
 
 	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
@@ -52,6 +53,7 @@ def main(args):
 							collate_fn=batch_collate_fn,
 							num_workers=16)
 
+	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
 
 	model = Transformer(n_src_vocab=VOCAB_SIZE, n_trg_vocab=VOCAB_SIZE, src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
@@ -70,8 +72,10 @@ def main(args):
 		print("Using", torch.cuda.device_count(), "GPUs...")
 		model = torch.nn.DataParallel(model)
 	
-	model.to(device)
+	# model.to(device)
 
+	src_word_emb
+	
 	trainer = EditorNoRetrievalTrainer(device)
 	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)

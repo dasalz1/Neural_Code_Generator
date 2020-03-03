@@ -90,8 +90,9 @@ class EditorNoRetrievalTrainer:
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
-			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
-				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
+				batch_xs, batch_ys = batch#map(lambda x: x.to(self.device), batch)
+				batch_ys = batch_ys.to(self.device)
 				trg_ys = batch_ys[:, 1:]
 				optimizer.zero_grad()
 
