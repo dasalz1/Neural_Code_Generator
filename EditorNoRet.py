@@ -91,13 +91,12 @@ class EditorNoRetrievalTrainer:
 			n_word_total = 0.0
 			n_word_correct = 0.0
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
-				batch_xs, batch_ys = batch#map(lambda x: x.to(self.device), batch)
-				# batch_ys = batch_ys.to(self.device)
-				trg_ys = batch_ys[:, 1:].to(self.device)
+				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+				trg_ys = batch_ys[:, 1:]
 				optimizer.zero_grad()
 
 				pred_logits = model(batch_xs, batch_ys[:, :-1])
-				pred_logits = pred_logits.view(-1, pred_logits.size(2))
+				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				loss, n_correct = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
 
 				loss.backward()
