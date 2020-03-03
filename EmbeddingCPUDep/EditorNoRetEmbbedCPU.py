@@ -62,9 +62,9 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 		accuracies = []
 		with torch.no_grad():
 			for batch in tqdm(validation_loader):
-				batch_xs, batch_ys = map(lambda x.to('cuda:0'), batch)#.to(self.device), batch)
+				# batch_xs, batch_ys = map(lambda x.to(0): x, batch)#.to(self.device), batch)
 				# batch_ys = batch_ys.to(self.device)
-				# batch_xs, batch_ys = batch
+				batch_xs, batch_ys = map(lambda x: x.to('cuda: 0'), batch)
 				# trg_ys = batch_ys[:, 1:].to(self.device)
 				trg_ys = pd.DataFrame(batch_ys[:, 1:].numpy())
 
@@ -117,8 +117,8 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 			n_word_total = 0.0
 			n_word_correct = 0.0
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
-				# batch_xs, batch_ys = map(lambda x: x.to(0), batch)#.to(self.device), batch)
-				batch_xs, batch_ys = batch
+				batch_xs, batch_ys = map(lambda x: x.to('cuda:0'), batch)#.to(self.device), batch)
+				# batch_xs, batch_ys = batch
 				trg_ys = batch_ys[:, 1:].to(torch.cuda.current_device())#self.device)
 
 				optimizer.zero_grad()
@@ -128,11 +128,11 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 
 				enc_output = model.forward(src_seq=src_seq, src_mask=src_mask, module="encoder")
 
-				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(torch.cuda.current_device())#self.device)
-				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(torch.cuda.current_device())#self.device)
+				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
+				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
-				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to('cpu')
-				pred_logits = (trg_word_prj(dec_output)*x_logit_scale).to(torch.cuda.current_device())#self.device)
+				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to("cuda:0")
+				pred_logits = (trg_word_prj(dec_output)*x_logit_scale).to(self.device)
     			# pred_logits
 
 
