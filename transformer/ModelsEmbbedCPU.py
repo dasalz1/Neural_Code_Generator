@@ -149,13 +149,19 @@ class TransformerEmbbedCPU(nn.Module):
          the dimensions of all module outputs shall be the same.'
 
 
-    def forward_enc(self, src_seq, src_mask):
-        enc_output, *_ = self.encoder(src_seq, src_mask)
-        return enc_output
+    # def forward_enc(self, src_seq, src_mask):
+        # enc_output, *_ = self.encoder(src_seq, src_mask)
+        # return enc_output
 
-    def forward_dec(self, enc_output, trg_seq, src_mask, trg_mask):
-        dec_output, *_ = self.decoder(trg_seq, trg_mask, enc_output, src_mask)
-        return dec_output
+    # def forward_dec(self, enc_output, trg_seq, src_mask, trg_mask):
+        # dec_output, *_ = self.decoder(trg_seq, trg_mask, enc_output, src_mask)
+        # return dec_output
 
-    def forward(self):
-        pass
+    def forward(self, src_seq=None, src_mask=None, enc_output=None, trg_seq=None, trg_mask=None, module="encoder"):
+        if module == "encoder":
+            enc_output, *_ = self.encoder(src_seq, src_mask)
+            return enc_output
+        else:
+            dec_output, *_ = self.decoder(trg_seq, trg_mask, enc_output, src_mask)
+            return dec_output
+        

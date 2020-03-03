@@ -125,12 +125,12 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
 				src_seq = src_word_emb(batch_xs).to(self.device)
 
-				enc_output = model.forward_enc(src_seq, src_mask)
+				enc_output = model.forward(src_seq=src_seq, src_mask=src_mask, module="encoder")
 
 				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
-				dec_output = model.forward_dec(enc_output, trg_seq, src_mask, trg_mask).cpu()
+				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").cpu()
 				pred_logits = trg_word_prj(dec_output)*x_logit_scale
 				pred_logits.to(self.device)
     			# pred_logits
