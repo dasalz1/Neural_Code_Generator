@@ -37,8 +37,8 @@ class PairDataset(Dataset):
             
             # something is broken here so just give filler
             if len(x[0]) != self.num_cols:
-                idx = max(0, idx-1)
-                return self.__getitem__(self.len-1 if idx == 0 else idx)
+                # idx = max(0, idx-1)
+                return self.__getitem__(np.random.randint(0, self.len))
         except:
             x = next(pd.read_csv(self.filename,
                                 skiprows=idx * self.chunksize+1,
@@ -79,8 +79,8 @@ class RetrieveDataset(Dataset):
 
                     # something is broken here so just give filler
             if len(x[0]) != self.num_cols:
-                idx = max(0, idx-1)
-                return self.__getitem__(self.len-1 if idx == 0 else idx)
+                # idx = max(0, idx-1)
+                return self.__getitem__(np.random.randint(0, self.len))
         except:
             x = next(pd.read_csv(self.filename,
                                 skiprows=idx * self.chunksize+1,
