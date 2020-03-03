@@ -92,7 +92,6 @@ class EditorNoRetrievalTrainer:
 			n_word_correct = 0.0
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
-				print("just got data")
 				trg_ys = batch_ys[:, 1:]
 				optimizer.zero_grad()
 
@@ -104,7 +103,7 @@ class EditorNoRetrievalTrainer:
 				
 				torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
 				optimizer.step()
-				print("just did optimization")
+
 				if scheduler:
 					scheduler.step()
 

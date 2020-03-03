@@ -38,7 +38,7 @@ def main(args):
 
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:5]]),#num_validation_repos:]]),
+	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
@@ -46,7 +46,7 @@ def main(args):
 
 	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
 
-	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:4]]),#:num_validation_repos]]),
+	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
