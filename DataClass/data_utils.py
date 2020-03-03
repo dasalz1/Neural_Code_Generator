@@ -94,7 +94,7 @@ def create_vocab_dictionary(path, file, save=True):
 
     embedding_idx = SEP_RET_IDX+1
     for word, count in tokens_dict.items():
-        if count < 5: continue
+        if count < 2: continue
         word2idx[word] = embedding_idx
         idx2word[embedding_idx] = word
         embedding_idx+=1
