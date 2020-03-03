@@ -75,7 +75,7 @@ def main(args):
 		trg_word_emb.weight = src_word_emb.weight
 
 
-	src_word_emb.to('cpu'); trg_word_emb.to('cpu'); trg_word_prj.to('cpu')
+	src_word_emb.to('cuda:0'); trg_word_emb.to('cuda:0'); trg_word_prj.to('cuda:0')
 
 	model = TransformerEmbbedCPU(src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
 						d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
@@ -83,7 +83,7 @@ def main(args):
 						n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
 						trg_emb_prj_weight_sharing=True)
 	
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	device = "cuda:1"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	if torch.cuda.is_available:
 		torch.backends.cudnn.deterministic=True
@@ -91,9 +91,9 @@ def main(args):
 		
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
-		model = torch.nn.DataParallel(model)#, device_ids=[i for i in range(1, torch.cuda.device_count())])
+		model = torch.nn.DataParallel(model), device_ids=[i for i in range(1, torch.cuda.device_count())])
 	
-	model.to(device)
+	model.to("cuda:1")
 
 	trainer = EditorNoRetrievalTrainerEmbbedCPU(device)
 	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
