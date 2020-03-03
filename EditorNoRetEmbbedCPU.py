@@ -62,10 +62,23 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 		accuracies = []
 		with torch.no_grad():
 			for batch in tqdm(validation_loader):
-				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+				batch_xs, batch_ys = map(lambda x: x, batch)#.to(self.device), batch)
+				# batch_ys = batch_ys.to(self.device)
+				# trg_ys = batch_ys[:, 1:].to(self.device)
 				trg_ys = pd.DataFrame(batch_ys[:, 1:].numpy())
 
-				pred = model(batch_xs, batch_ys[:, :-1])
+
+				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
+				src_seq = src_word_emb(batch_xs).to(self.device)
+
+				enc_output = model.forward_enc(src_seq, src_mask)
+
+				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
+				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
+
+				dec_output = model.forward_dec(enc_output, trg_seq, src_mask, trg_mask).cpu()
+				pred = trg_word_prj(dec_output)*x_logit_scale
+
 				# pred_max = pred.max(1)[1]
 				pred_max = pred.max(2)[1]
 				pred = pd.DataFrame(pred_max.numpy())
