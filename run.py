@@ -56,13 +56,15 @@ def main(args):
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
 
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 	model = Transformer(n_src_vocab=VOCAB_SIZE, n_trg_vocab=VOCAB_SIZE, src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
 						d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
 						n_head=args.num_heads, d_k=args.key_dimension, d_v=args.value_dimension, dropout=args.dropout,
 						n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
-						trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True)
+						trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True, device=device)
 	
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	
 
 	if torch.cuda.is_available:
 		torch.backends.cudnn.deterministic=True
