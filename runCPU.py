@@ -75,7 +75,7 @@ def main(args):
 		trg_word_emb.weight = src_word_emb.weight
 
 
-	src_word_emb.cpu(); trg_word_emb.cpu(); trg_word_prj.cpu()
+	src_word_emb.to('cpu'); trg_word_emb.to('cpu'); trg_word_prj.to('cpu')
 
 	model = TransformerEmbbedCPU(src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
 						d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
@@ -91,7 +91,7 @@ def main(args):
 		
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
-		model = torch.nn.DataParallel(model)
+		model = torch.nn.DataParallel(model, device_ids=[i for i in range(1, torch.cuda.device_count())])
 	
 	model.to(device)
 

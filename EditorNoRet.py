@@ -95,6 +95,8 @@ class EditorNoRetrievalTrainer:
 				trg_ys = batch_ys[:, 1:]
 				optimizer.zero_grad()
 
+				# print(batch_xs)
+
 				pred_logits = model(batch_xs, batch_ys[:, :-1])
 				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				loss, n_correct = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
