@@ -51,16 +51,14 @@ class EditorNoRetrievalTrainer:
 		with torch.no_grad():
 			for batch in tqdm(validation_loader):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
-				trg_ys = pd.DataFrame(batch_ys[:, 1:])
+				trg_ys = pd.DataFrame(batch_ys[:, 1:].numpy())
 
 				pred = model(batch_xs, batch_ys[:, :-1])
-				
 				# pred_max = pred.max(1)[1]
 				pred_max = pred.max(2)[1]
 				pred = pd.DataFrame(pred_max.numpy())
 
 				target = batch_ys[:, 1:].contiguous().view(-1)
-
 				non_pad_mask = target.ne(PAD_IDX)
 				n_correct = pred_max.contiguous().view(-1).eq(target)
 				n_correct = n_correct.masked_select(non_pad_mask).sum().item()
@@ -68,14 +66,16 @@ class EditorNoRetrievalTrainer:
 				accuracies.append(n_correct/n_word)
 
 				pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+				# print(pred.shape)
+				# print(trg_ys.shape)
+				# print(trg_ys)
 				trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
-
 				trg_words = np.expand_dims(trg_words, axis=1)
 				bleu_scores.append(corpus_bleu(trg_words.tolist(), pred_words.tolist(), smoothing_function=SmoothingFunction().method1))
-			
+
 			avg_bleu = np.mean(bleu_scores)
 			avg_accuracy = np.mean(accuracies)
-			print("Validation BLEU score: %.4f, Accuracy: %.4f" % (avg_bleu, accuracy))
+			print("Validation BLEU score: %.4f, Accuracy: %.4f" % (avg_bleu, avg_accuracy))
 			if tb is not None:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
@@ -83,9 +83,10 @@ class EditorNoRetrievalTrainer:
 	def train(self, model, optimizer, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
 		curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)
-		model.train()
+		
 
 		for epoch in range(epochs):
+			model.train()
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
@@ -118,13 +119,13 @@ class EditorNoRetrievalTrainer:
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
 					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
-				
-			self.validate_BLEU(model, validation_loader, epoch, tb)
 			
-			loss_per_word = total_loss / n_word_total
+			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
 
 			if tb is not None:
 				tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
+
+			self.validate_BLEU(model, validation_loader, epoch, tb)
 
 

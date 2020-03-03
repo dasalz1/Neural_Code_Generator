@@ -8,7 +8,7 @@ from EditorNoRet import EditorNoRetrievalTrainer
 from torch.utils.data import ConcatDataset, DataLoader
 import torch
 from datetime import date
-import argparse
+import argparse, random
 import numpy as np
 
 parser = argparse.ArgumentParser()
@@ -27,11 +27,12 @@ parser.add_argument("--epochs", default=10, type=int)
 args = parser.parse_args()
 
 def main(args):
+	random.seed(12324)
 	np.random.seed(12324)
 	torch.manual_seed(12324)
 
 	VOCAB_SIZE = len(word2idx)
-	num_validation_repos = 30
+	num_validation_repos = 100
 
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 
