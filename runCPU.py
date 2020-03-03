@@ -91,7 +91,7 @@ def main(args):
 		
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
-		model = torch.nn.DataParallel(model, device_ids=[i for i in range(1, torch.cuda.device_count())])
+		model = torch.nn.DataParallel(model)#, device_ids=[i for i in range(1, torch.cuda.device_count())])
 	
 	model.to(device)
 
