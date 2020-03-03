@@ -38,7 +38,7 @@ def main(args):
 
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
+	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:150]]),
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
@@ -75,6 +75,8 @@ def main(args):
 		model = torch.nn.DataParallel(model)
 	
 	model.to(device)
+	model.encoder.src_word_emb.cpu()
+	model.decoder.trg_word_emb.cpu()
 
 	trainer = EditorNoRetrievalTrainer(device)
 	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
