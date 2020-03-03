@@ -131,8 +131,7 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
 				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").cpu()
-				pred_logits = trg_word_prj(dec_output)*x_logit_scale
-				pred_logits.to(self.device)
+				pred_logits = (trg_word_prj(dec_output)*x_logit_scale).to(self.device)
     			# pred_logits
 
 
