@@ -119,12 +119,12 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
 				batch_xs, batch_ys = map(lambda x: x.to('cuda:0'), batch)#.to(self.device), batch)
 				# batch_xs, batch_ys = batch
-				trg_ys = batch_ys[:, 1:].to(torch.cuda.current_device())#self.device)
+				trg_ys = batch_ys[:, 1:].to('cuda:0')#self.device)
 
 				optimizer.zero_grad()
 
-				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(torch.cuda.current_device())#self.device)
-				src_seq = src_word_emb(batch_xs).to(torch.cuda.current_device())#self.device)
+				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
+				src_seq = src_word_emb(batch_xs).to(self.device)
 
 				enc_output = model.forward(src_seq=src_seq, src_mask=src_mask, module="encoder")
 
