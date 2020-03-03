@@ -72,10 +72,8 @@ def main(args):
 		print("Using", torch.cuda.device_count(), "GPUs...")
 		model = torch.nn.DataParallel(model)
 	
-	# model.to(device)
+	model.to(device)
 
-	src_word_emb
-	
 	trainer = EditorNoRetrievalTrainer(device)
 	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)

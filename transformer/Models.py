@@ -66,7 +66,7 @@ class Encoder(nn.Module):
 
         # -- Forward
         src_seq = self.src_word_emb(src_seq).to(self.device)
-        enc_output = self.dropout(self.position_enc(src_seq)))
+        enc_output = self.dropout(self.position_enc(src_seq))
         # enc_output = self.dropout(self.position_enc(self.src_word_emb(src_seq)))
 
         for enc_layer in self.layer_stack:
@@ -107,7 +107,7 @@ class Decoder(nn.Module):
         dec_output = self.trg_word_emb(trg_seq).to(self.device)
         # dec_output = dec_output.cpu()
         dec_output = self.dropout(self.position_enc(dec_output))
-        dec_output = self.dropout(self.position_enc(self.trg_word_emb(trg_seq)))
+        # dec_output = self.dropout(self.position_enc(self.trg_word_emb(trg_seq)))
 
         for dec_layer in self.layer_stack:
             dec_output, dec_slf_attn, dec_enc_attn = dec_layer(
