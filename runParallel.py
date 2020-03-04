@@ -14,7 +14,7 @@ import numpy as np
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--filepath", default='../repo_files', type=str)
+parser.add_argument("--filepath", default='./github_data/repo_files', type=str)
 parser.add_argument("--exp_name", default='EditorPairTrain', type=str)
 parser.add_argument("--unique_id", default=str(date.today()), type=str)
 parser.add_argument("--num_layers", default=6, type=int)
