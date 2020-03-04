@@ -42,7 +42,7 @@ def main(args):
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=int(args.batch_size/2))
+							num_workers=min(120, int(args.batch_size/2)))
 
 	print("Finished creating data loader")
 	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
@@ -51,7 +51,7 @@ def main(args):
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=int(args.batch_size/2))
+							num_workers=min(120, int(args.batch_size/2)))
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)

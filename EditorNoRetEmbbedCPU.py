@@ -24,7 +24,7 @@ def get_subsequent_mask(seq):
 
 class EditorNoRetrievalTrainerEmbbedCPU:
 
-	def __init__(self, device, device):
+	def __init__(self, embed_device, device):
 		self.embed_device = embed_device
 		self.device = device
 
@@ -133,7 +133,7 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
 				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
-				pred_logits = (trg_word_prj(dec_output)*x_logit_scale).to(self.device)
+				pred_logits = (trg_word_prj(dec_output)*x_logit_scale)#.to(self.embed_device)
     			# pred_logits
 
 

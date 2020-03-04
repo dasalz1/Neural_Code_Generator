@@ -34,8 +34,8 @@ def main(args):
 	torch.manual_seed(12324)
 
 
-	embed_device = 'cpu'
-	device = "cuda:0"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	embed_device = 'cuda:0'#'cpu'
+	device = "cuda:1"#"cuda:0"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	emb_src_trg_weight_sharing = True
 	trg_emb_prj_weight_sharing = True
@@ -50,7 +50,7 @@ def main(args):
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=int(args.batch_size/2))
+							num_workers=min(120, int(args.batch_size/2)))
 
 	print("Finished creating data loader")
 	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
@@ -59,7 +59,7 @@ def main(args):
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=int(args.batch_size/2))
+							num_workers=min(120, int(args.batch_size/2)))
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
@@ -77,7 +77,6 @@ def main(args):
 
 	if emb_src_trg_weight_sharing:
 		trg_word_emb.weight = src_word_emb.weight
-
 
 	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
 
@@ -98,7 +97,7 @@ def main(args):
 	model.to(device)
 
 	trainer = EditorNoRetrievalTrainerEmbbedCPU(embed_device, device)
-	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
+	optimizer = optim.Adam(model.parameters() + src_word_emb.parameters() + trg_word_emb.parameters() + trg_word_prj.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
 	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
