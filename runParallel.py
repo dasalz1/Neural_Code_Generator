@@ -114,8 +114,8 @@ def main(args):
 	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
 
 	trainer = EditorNoRetrievalTrainerParallel(embed_device, device)
-	optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()))
-	optimizer = optim.Adam(list(model.parameters()) + list(trg_word_prj.parameters()), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
+	optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
+	optimizer = optim.Adam(list(model.parameters()) + list(trg_word_prj.parameters()), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
 	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, tb=tb, epochs=args.epochs)
