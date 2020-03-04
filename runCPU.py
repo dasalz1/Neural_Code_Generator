@@ -33,9 +33,11 @@ def main(args):
 	np.random.seed(12324)
 	torch.manual_seed(12324)
 
-
+	embed_device_num = 0
 	embed_device = 'cuda:0'#'cpu'
-	device = "cuda:1"#"cuda:0"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	device_num = 2
+	device = "cuda:"+str(model_device)#"cuda:0"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	
 
 	emb_src_trg_weight_sharing = True
 	trg_emb_prj_weight_sharing = True
@@ -78,8 +80,6 @@ def main(args):
 	if emb_src_trg_weight_sharing:
 		trg_word_emb.weight = src_word_emb.weight
 
-	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
-
 	model = TransformerEmbbedCPU(src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
 						d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
 						n_head=args.num_heads, d_k=args.key_dimension, d_v=args.value_dimension, dropout=args.dropout,
@@ -92,12 +92,17 @@ def main(args):
 		
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
-		model = torch.nn.DataParallel(model, device_ids=[i for i in range(int(device[-1]), torch.cuda.device_count())])
+		model = torch.nn.DataParallel(model, device_ids=[i for i in range(device_num, torch.cuda.device_count())])
+		src_word_emb = torch.nn.DataParallel(src_word_emb, device_ids=[i for i in range(embed_device_num, device_num)])
+		trg_word_emb = torch.nn.DataParallel(trg_word_emb, device_ids=[i for i in range(embed_device_num, device_num)])
+		trg_word_prj = torch.nn.DataParallel(trg_word_prj, device_ids=[i for i in range(embed_device_num, device_num)])
+
 	
 	model.to(device)
-
+	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
+	
 	trainer = EditorNoRetrievalTrainerEmbbedCPU(embed_device, device)
-	optimizer = optim.Adam(model.parameters() + src_word_emb.parameters() + trg_word_emb.parameters() + trg_word_prj.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
+	optimizer = optim.Adam(list(model.parameters()) + list(src_word_emb.parameters()) + list(trg_word_emb.parameters()) + list(trg_word_prj.parameters()), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
 	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
