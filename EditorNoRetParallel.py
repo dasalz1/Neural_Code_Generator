@@ -106,7 +106,7 @@ class EditorNoRetrievalTrainerParallel:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
+	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, scheduler=None, scheduler_sparse=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
 		curr_epoch, model, optimizer, optimizer_sparse, scheduler = from_checkpoint_if_exists(model, optimizer, optimizer_sparse, scheduler)
 		

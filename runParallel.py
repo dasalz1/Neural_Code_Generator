@@ -117,8 +117,9 @@ def main(args):
 	optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
 	optimizer = optim.Adam(list(model.parameters()) + list(trg_word_prj.parameters()), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
+	scheduler_sparse = optim.lr_scheduler.MultiStepLR(optimizer_sparse, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
-	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, scheduler, scheduler_sparse, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)
