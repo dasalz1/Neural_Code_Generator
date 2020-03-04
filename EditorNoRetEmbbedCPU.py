@@ -44,7 +44,6 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 			  loss = -(one_hot * log_prb).sum(dim=1)
 			  loss = loss.masked_select(non_pad_mask).sum()  # average later
 			else:
-				
 			  loss = F.cross_entropy(pred, target, ignore_index=PAD_IDX, reduction='sum')
 			return loss
 		
@@ -78,7 +77,7 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
-				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
+				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to("cuda:1")#self.embed_device)
 				pred = trg_word_prj(dec_output)*x_logit_scale
 
 				# pred_max = pred.max(1)[1]

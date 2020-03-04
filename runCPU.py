@@ -34,9 +34,9 @@ def main(args):
 	torch.manual_seed(12324)
 
 	embed_device_num = 0
-	embed_device = 'cuda:0'#'cpu'
+	embed_device = 'cuda:'+str(embed_device_num)#'cpu'
 	device_num = 2
-	device = "cuda:"+str(model_device)#"cuda:0"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	device = 'cuda:'+str(device_num)#"cuda:0"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	
 
 	emb_src_trg_weight_sharing = True
@@ -93,14 +93,14 @@ def main(args):
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
 		model = torch.nn.DataParallel(model, device_ids=[i for i in range(device_num, torch.cuda.device_count())])
-		src_word_emb = torch.nn.DataParallel(src_word_emb, device_ids=[i for i in range(embed_device_num, device_num)])
-		trg_word_emb = torch.nn.DataParallel(trg_word_emb, device_ids=[i for i in range(embed_device_num, device_num)])
-		trg_word_prj = torch.nn.DataParallel(trg_word_prj, device_ids=[i for i in range(embed_device_num, device_num)])
+		# src_word_emb = torch.nn.DataParallel(src_word_emb, device_ids=[i for i in range(embed_device_num, device_num)])
+		# trg_word_emb = torch.nn.DataParallel(trg_word_emb, device_ids=[i for i in range(embed_device_num, device_num)])
+		# trg_word_prj = torch.nn.DataParallel(trg_word_prj, device_ids=[i for i in range(embed_device_num, device_num)])
 
 	
 	model.to(device)
-	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
-	
+	src_word_emb.to(embed_device); trg_word_emb.to("cuda:1"); trg_word_prj.to("cuda:1")#embed_device)
+
 	trainer = EditorNoRetrievalTrainerEmbbedCPU(embed_device, device)
 	optimizer = optim.Adam(list(model.parameters()) + list(src_word_emb.parameters()) + list(trg_word_emb.parameters()) + list(trg_word_prj.parameters()), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
