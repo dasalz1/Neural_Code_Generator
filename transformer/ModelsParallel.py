@@ -41,7 +41,7 @@ class PositionalEncoding(nn.Module):
         return x + self.pos_table[:, :x.size(1)].clone().detach()
 
 
-class EncoderEmbbedCPU(nn.Module):
+class EncoderParallel(nn.Module):
     ''' A encoder model with self attention mechanism. '''
 
     def __init__(
@@ -76,7 +76,7 @@ class EncoderEmbbedCPU(nn.Module):
         return enc_output,
 
 
-class DecoderEmbbedCPU(nn.Module):
+class DecoderParallel(nn.Module):
     ''' A decoder model with self attention mechanism. '''
 
     def __init__(
@@ -113,7 +113,7 @@ class DecoderEmbbedCPU(nn.Module):
         return dec_output,
 
 
-class TransformerEmbbedCPU(nn.Module):
+class TransformerParallel(nn.Module):
     ''' A sequence to sequence model with attention mechanism. '''
 
     def __init__(
@@ -126,13 +126,13 @@ class TransformerEmbbedCPU(nn.Module):
 
         self.src_pad_idx, self.trg_pad_idx = src_pad_idx, trg_pad_idx
 
-        self.encoder = EncoderEmbbedCPU(
+        self.encoder = EncoderParallel(
             n_position=n_src_position,
             d_word_vec=d_word_vec, d_model=d_model, d_inner=d_inner,
             n_layers=n_layers, n_head=n_head, d_k=d_k, d_v=d_v,
             pad_idx=src_pad_idx, dropout=dropout)
 
-        self.decoder = DecoderEmbbedCPU(
+        self.decoder = DecoderParallel(
             # n_trg_vocab=n_trg_vocab, n_position=n_position,
             n_position=n_trg_position,
             d_word_vec=d_word_vec, d_model=d_model, d_inner=d_inner,

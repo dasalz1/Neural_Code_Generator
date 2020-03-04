@@ -22,7 +22,7 @@ def get_subsequent_mask(seq):
         torch.ones((1, len_s, len_s), device=seq.device), diagonal=1)).bool()
     return subsequent_mask
 
-class EditorNoRetrievalTrainerEmbbedCPU:
+class EditorNoRetrievalTrainerParallel:
 
 	def __init__(self, embed_device, device):
 		self.embed_device = embed_device
