@@ -77,7 +77,7 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
-				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to("cuda:1")#self.embed_device)
+				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
 				pred = trg_word_prj(dec_output)*x_logit_scale
 
 				# pred_max = pred.max(1)[1]
@@ -119,7 +119,7 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
 				batch_xs, batch_ys = map(lambda x: x.to(self.embed_device), batch)#.to(self.device), batch)
 				# batch_xs, batch_ys = batch
-				trg_ys = batch_ys[:, 1:].to("cuda:1")#self.device)
+				trg_ys = batch_ys[:, 1:]#.to('cuda:0')#self.device)
 
 				optimizer.zero_grad()
 
@@ -131,7 +131,7 @@ class EditorNoRetrievalTrainerEmbbedCPU:
 				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
-				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to("cuda:1")#self.embed_device)
+				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
 				pred_logits = (trg_word_prj(dec_output)*x_logit_scale)#.to(self.embed_device)
     			# pred_logits
 

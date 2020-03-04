@@ -34,8 +34,8 @@ def main(args):
 	torch.manual_seed(12324)
 
 	embed_device_num = 0
-	embed_device = 'cuda:'+str(embed_device_num)#'cpu'
-	device_num = 2
+	embed_device = 'cpu'#'cuda:'+str(embed_device_num)#'cpu'
+	device_num = 1
 	device = 'cuda:'+str(device_num)#"cuda:0"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	
 
@@ -99,7 +99,7 @@ def main(args):
 
 	
 	model.to(device)
-	src_word_emb.to(embed_device); trg_word_emb.to("cuda:1"); trg_word_prj.to("cuda:1")#embed_device)
+	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
 
 	trainer = EditorNoRetrievalTrainerEmbbedCPU(embed_device, device)
 	optimizer = optim.Adam(list(model.parameters()) + list(src_word_emb.parameters()) + list(trg_word_emb.parameters()) + list(trg_word_prj.parameters()), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
