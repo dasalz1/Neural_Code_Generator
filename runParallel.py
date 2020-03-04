@@ -35,11 +35,11 @@ def main(args):
 	np.random.seed(12324)
 	torch.manual_seed(12324)
 
-	if args.embed_device:
+	if args.embed_device is not None:
 		print('hi')
-		embed_device = 'cuda'+str(args.embed_device)
+		embed_device = 'cuda:'+str(args.embed_device)
 		device_num = args.num_embed_devices
-		device = 'cuda'+str(device_num)
+		device = 'cuda:'+str(device_num)
 	else:
 		print('hey')
 		embed_device = 'cpu'
