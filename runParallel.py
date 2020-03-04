@@ -36,10 +36,12 @@ def main(args):
 	torch.manual_seed(12324)
 
 	if args.embed_device:
+		print('hi')
 		embed_device = 'cuda'+str(args.embed_device)
 		device_num = args.num_embed_devices
 		device = 'cuda'+str(device_num)
 	else:
+		print('hey')
 		embed_device = 'cpu'
 		device_num = 0
 		device = 'cuda:0'
@@ -78,7 +80,7 @@ def main(args):
 
 
 	src_word_emb = nn.Embedding(VOCAB_SIZE, args.d_word_vec, padding_idx=PAD_IDX, sparse=True)
-	trg_word_emb = nn.Embedding(VOCAB_SIZE, args.d_word_vec, padding_idx=PAD_IDX, sprase=True)
+	trg_word_emb = nn.Embedding(VOCAB_SIZE, args.d_word_vec, padding_idx=PAD_IDX, sparse=True)
 	trg_word_prj = nn.Linear(args.d_word_vec, VOCAB_SIZE, bias=False)
 	x_logit_scale = 1
 
