@@ -41,8 +41,8 @@ def main(args):
 	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:150]]),
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn)#,
-							# num_workers=16)
+							collate_fn=batch_collate_fn,
+							num_workers=int(args.batch_size/2))
 
 	print("Finished creating data loader")
 	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
@@ -50,8 +50,8 @@ def main(args):
 	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn)#,
-							# num_workers=16)
+							collate_fn=batch_collate_fn,
+							num_workers=int(args.batch_size/2))
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)

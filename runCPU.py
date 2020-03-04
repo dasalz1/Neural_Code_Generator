@@ -33,6 +33,10 @@ def main(args):
 	np.random.seed(12324)
 	torch.manual_seed(12324)
 
+
+	embed_device = 'cpu'
+	device = "cuda:0"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 	emb_src_trg_weight_sharing = True
 	trg_emb_prj_weight_sharing = True
 	VOCAB_SIZE = len(word2idx)
@@ -45,8 +49,8 @@ def main(args):
 	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:150]]),
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn)#,
-							# num_workers=16)
+							collate_fn=batch_collate_fn,
+							num_workers=int(args.batch_size/2))
 
 	print("Finished creating data loader")
 	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
@@ -54,8 +58,8 @@ def main(args):
 	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn)#,
-							# num_workers=16)
+							collate_fn=batch_collate_fn,
+							num_workers=int(args.batch_size/2))
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
@@ -75,15 +79,13 @@ def main(args):
 		trg_word_emb.weight = src_word_emb.weight
 
 
-	src_word_emb.to('cuda:0'); trg_word_emb.to('cuda:0'); trg_word_prj.to('cuda:0')
+	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
 
 	model = TransformerEmbbedCPU(src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
 						d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
 						n_head=args.num_heads, d_k=args.key_dimension, d_v=args.value_dimension, dropout=args.dropout,
 						n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
 						trg_emb_prj_weight_sharing=True)
-	
-	device = "cuda:1"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	if torch.cuda.is_available:
 		torch.backends.cudnn.deterministic=True
@@ -91,11 +93,11 @@ def main(args):
 		
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
-		model = torch.nn.DataParallel(model, device_ids=[i for i in range(1, torch.cuda.device_count())])
+		model = torch.nn.DataParallel(model, device_ids=[i for i in range(int(device[-1]), torch.cuda.device_count())])
 	
-	model.to("cuda:1")
+	model.to(device)
 
-	trainer = EditorNoRetrievalTrainerEmbbedCPU(device)
+	trainer = EditorNoRetrievalTrainerEmbbedCPU(embed_device, device)
 	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
