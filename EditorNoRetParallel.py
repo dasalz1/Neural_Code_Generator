@@ -106,7 +106,7 @@ class EditorNoRetrievalTrainerParallel:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
+	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer2, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
 		curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)
 		
@@ -122,6 +122,7 @@ class EditorNoRetrievalTrainerParallel:
 				trg_ys = batch_ys[:, 1:]#.to('cuda:0')#self.device)
 
 				optimizer.zero_grad()
+				optimizer2.zero_grad()
 
 				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
 				src_seq = src_word_emb(batch_xs).to(self.device)
@@ -144,6 +145,7 @@ class EditorNoRetrievalTrainerParallel:
 				
 				torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
 				optimizer.step()
+				optimizer2.step()
 
 				if scheduler:
 					scheduler.step()
