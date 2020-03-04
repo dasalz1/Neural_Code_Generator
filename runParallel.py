@@ -104,15 +104,16 @@ def main(args):
 		
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
-		model = torch.nn.DataParallel(model, device_ids=list(range(args.num_embed_devices if args.embed_device else 0, torch.cuda.device_count())))
-
+		model = torch.nn.DataParallel(model, device_ids=list(range(args.num_embed_devices if args.embed_device is not None else 0, torch.cuda.device_count())))
+		trg_word_prj = torch.nn.DataParallel(model, device_ids=list(range(args.num_embed_devices if args.embed_device is not None else 0, torch.cuda.device_count())))
 		if args.num_embed_devices > 1:
 			src_word_emb = torch.nn.DataParallel(src_word_emb, device_ids=list(range(0, args.num_embed_devices)))
 			trg_word_emb = torch.nn.DataParallel(trg_word_emb, device_ids=list(range(0, args.num_embed_devices)))
 			trg_word_prj = torch.nn.DataParallel(trg_word_prj, device_ids=list(range(0, args.num_embed_devices)))
 	
 	model.to(device)
-	src_word_emb.to(embed_device);# trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
+	trg_word_prj.to(device)
+	src_word_emb.to(embed_device); trg_word_emb.to(embed_device);# trg_word_prj.to(embed_device)
 
 	trainer = EditorNoRetrievalTrainerParallel(embed_device, device)
 	optimizer2 = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()))
