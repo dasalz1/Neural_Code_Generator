@@ -106,9 +106,9 @@ class EditorNoRetrievalTrainerParallel:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer2, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
+	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
-		curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)
+		curr_epoch, model, optimizer, optimizer_sparse, scheduler = from_checkpoint_if_exists(model, optimizer, optimizer_sparse, scheduler)
 		
 
 		for epoch in range(epochs):
@@ -122,7 +122,7 @@ class EditorNoRetrievalTrainerParallel:
 				trg_ys = batch_ys[:, 1:].to(self.device)#.to('cuda:0')#self.device)
 
 				optimizer.zero_grad()
-				optimizer2.zero_grad()
+				optimizer_sparse.zero_grad()
 
 				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
 				src_seq = src_word_emb(batch_xs).to(self.device)
@@ -132,7 +132,7 @@ class EditorNoRetrievalTrainerParallel:
 				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
-				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder")#.to(self.embed_device)
+				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
 				pred_logits = (trg_word_prj(dec_output)*x_logit_scale)#.to(self.embed_device)
     			# pred_logits
 
@@ -144,8 +144,9 @@ class EditorNoRetrievalTrainerParallel:
 				loss.backward()
 				
 				torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
+				torch.nn.utils.clip_grad_norm_(list(trg_word_emb.parameters()) + list(src_word_emb.parameters()) + list(trg_word_prj.parameters()), 0.1)
 				optimizer.step()
-				optimizer2.step()
+				optimizer_sparse.step()
 
 				if scheduler:
 					scheduler.step()
@@ -161,7 +162,7 @@ class EditorNoRetrievalTrainerParallel:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
-					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
+					save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, suffix=str(batch_idx))
 			
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total

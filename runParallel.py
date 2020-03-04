@@ -105,22 +105,20 @@ def main(args):
 	if torch.cuda.device_count() > 1:
 		print("Using", torch.cuda.device_count(), "GPUs...")
 		model = torch.nn.DataParallel(model, device_ids=list(range(args.num_embed_devices if args.embed_device is not None else 0, torch.cuda.device_count())))
-		trg_word_prj = torch.nn.DataParallel(model, device_ids=list(range(args.num_embed_devices if args.embed_device is not None else 0, torch.cuda.device_count())))
 		if args.num_embed_devices > 1:
 			src_word_emb = torch.nn.DataParallel(src_word_emb, device_ids=list(range(0, args.num_embed_devices)))
 			trg_word_emb = torch.nn.DataParallel(trg_word_emb, device_ids=list(range(0, args.num_embed_devices)))
 			trg_word_prj = torch.nn.DataParallel(trg_word_prj, device_ids=list(range(0, args.num_embed_devices)))
 	
 	model.to(device)
-	trg_word_prj.to(device)
-	src_word_emb.to(embed_device); trg_word_emb.to(embed_device);# trg_word_prj.to(embed_device)
+	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
 
 	trainer = EditorNoRetrievalTrainerParallel(embed_device, device)
-	optimizer2 = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()))
+	optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()))
 	optimizer = optim.Adam(list(model.parameters()) + list(trg_word_prj.parameters()), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
 	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
-	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer2, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)

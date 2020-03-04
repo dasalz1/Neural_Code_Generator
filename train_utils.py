@@ -1,21 +1,23 @@
 import os, torch
 
-def save_checkpoint(epoch, model, optimizer, scheduler, suffix="default"):
+def save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, suffix="default"):
     if scheduler:
         torch.save({
             'epoch': epoch,
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
+            'optimizer_sparse': optimizer_sparse.state_dict(),
             'scheduler': scheduler.state_dict()
         }, "checkpoint-{}.pth".format(suffix))
     else:
         torch.save({
             'epoch': epoch,
             'model': model.state_dict(),
-            'optimizer': optimizer.state_dict()
+            'optimizer': optimizer.state_dict(),
+            'optimizer_sparse': optimizer_sparse.state_dict()
         }, "checkpoint-{}.pth".format(suffix))
 
-def from_checkpoint_if_exists(model, optimizer, scheduler):
+def from_checkpoint_if_exists(model, optimizer, optimizer_sparse, scheduler):
     epoch = 0
     if os.path.isfile("checkpoint.pth"):
         print("Loading existing checkpoint...")
@@ -23,6 +25,7 @@ def from_checkpoint_if_exists(model, optimizer, scheduler):
         epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
+        optimizer_sparse.load_state_dict(checkpoint['optimizer_sparse'])
     if scheduler and 'scheduler' in checkpoint:
         scheduler.load_state_dict(checkpoint['scheduler'])
 
