@@ -230,15 +230,10 @@ if __name__ == '__main__':
     # for repo_name, result in retrieved_repos:
         # retrieved_examples[repo_name] = result
 
-    x_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)
-    y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
-
-    x_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in x_tokens]
-    y_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in y_tokens]
-
     output_name = '_'.join([to_string_opt(opt), '.pkl'])
     with open(output_dir / output_name, 'wb') as f:
         pickle.dump(retrieved_examples, f)
     f.close()
+
     print(f'Length of final output is {len(retrieved_examples)}')
     logging.info(f'pickle file saved to {output_name}')
