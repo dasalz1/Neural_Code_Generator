@@ -76,10 +76,10 @@ def main(args):
 
 	trainer = EditorNoRetrievalTrainer(device)
 
-	optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
-	scheduler = optim.lr_scheduler.CyclicLR(optimizer, base_lr=6e-4, max_lr=2.0)
+	optimizer = optim.Adam(model.parameters(), lr=0.2, betas=(0.9, 0.98), eps=1e-8)
+	
 
-	trainer.train(model, optimizer, scheduler, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)
