@@ -27,9 +27,9 @@ parser.add_argument("--epochs", default=10, type=int)
 args = parser.parse_args()
 
 def main(args):
-	random.seed(12324)
-	np.random.seed(12324)
-	torch.manual_seed(12324)
+	random.seed(68492)
+	np.random.seed(68492)
+	torch.manual_seed(68492)
 
 	VOCAB_SIZE = len(word2idx)
 	num_validation_repos = 50
@@ -77,9 +77,9 @@ def main(args):
 	trainer = EditorNoRetrievalTrainer(device)
 
 	optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
-	# optimizer_sparse = optim.SparseAdam(src_emb_params + trg_emb_params, lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
+	scheduler = optim.lr_scheduler.CyclicLR(optimizer, base_lr=6e-4, max_lr=2.0)
 
-	trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, optimizer, scheduler, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)

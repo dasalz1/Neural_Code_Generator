@@ -1,6 +1,6 @@
 import os, torch
 
-def save_checkpoint(epoch, model, optimizer, optimizer_sparse=None, suffix="default"):
+def save_checkpoint(epoch, model, optimizer, optimizer_sparse=None, scheduler=None, scheduler_sparse=None, suffix="default"):
     if optimizer_sparse is None:
         torch.save({
             'epoch': epoch,
@@ -15,25 +15,24 @@ def save_checkpoint(epoch, model, optimizer, optimizer_sparse=None, suffix="defa
             'optimizer_sparse': optimizer_sparse.state_dict(),
         }, "checkpoint-{}.pth".format(suffix))
 
-def from_checkpoint_if_exists(model, optimizer, optimizer_sparse=None):
+def from_checkpoint_if_exists(model, optimizer, optimizer_sparse=None, scheduler=None, scheduler_sparse=None):
     epoch = 0
     if os.path.isfile("checkpoint.pth"):
         print("Loading existing checkpoint...")
         checkpoint = torch.load("checkpoint.pth")
         epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['model'])
+        scheduler.load_state_dict(checkpoint['scheduler'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         if optimizer_sparse is not None:
             optimizer_sparse.load_state_dict(checkpoint['optimizer_sparse'])
             
 
-            return epoch, model, optimizer, optimizer_sparse
-
             # optimizer_sparse.load_state_dict(checkpoint['optimizer_sparse'])
     if optimizer_sparse is not None:
-        return epoch, model, optimizer, optimizer_sparse
-        
-    return epoch, model, optimizer
+        return epoch, model, optimizer, optimizer_sparse, scheduler, scheduler_sparse
+
+    return epoch, model, optimizer, scheduler
 
 def tb_mle_meta_batch(tb, loss, acc, num_iter):
     tb.add_scalars(

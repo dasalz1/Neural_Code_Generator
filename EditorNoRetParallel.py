@@ -106,9 +106,9 @@ class EditorNoRetrievalTrainerParallel:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, scheduler=None, scheduler_sparse=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
+	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, scheduler, scheduler_sparse, data_loader, validation_loader, scheduler=None, scheduler_sparse=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
-		curr_epoch, model, optimizer, optimizer_sparse = from_checkpoint_if_exists(model, optimizer, optimizer_sparse)
+		curr_epoch, model, optimizer, optimizer_sparse, scheduler, scheduler_sparse = from_checkpoint_if_exists(model, optimizer, optimizer_sparse, scheduler, scheduler_sparse)
 		
 
 		for epoch in range(epochs):
@@ -148,8 +148,9 @@ class EditorNoRetrievalTrainerParallel:
 				optimizer.step()
 				optimizer_sparse.step()
 
-				if scheduler:
-					scheduler.step()
+				
+				scheduler.step()
+				scheduler_sparse.step()
 
 				total_mle_loss += loss.item()
 
@@ -162,7 +163,7 @@ class EditorNoRetrievalTrainerParallel:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
-					save_checkpoint(epoch, model, optimizer, optimizer_sparse, suffix=str(batch_idx))
+					save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, scheduler_sparse, suffix=str(batch_idx))
 			
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total

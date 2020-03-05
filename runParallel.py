@@ -31,9 +31,9 @@ parser.add_argument("--num_embed_devices", default=1, type=int)
 args = parser.parse_args()
 
 def main(args):
-	random.seed(12324)
-	np.random.seed(12324)
-	torch.manual_seed(12324)
+	random.seed(68492)
+	np.random.seed(68492)
+	torch.manual_seed(68492)
 
 	if args.embed_device is not None:
 		print('Embeddings on GPU')
@@ -114,10 +114,12 @@ def main(args):
 	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
 
 	trainer = EditorNoRetrievalTrainerParallel(embed_device, device)
-	optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
-	optimizer = optim.Adam(list(model.parameters()) + list(trg_word_prj.parameters()), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
+	optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=6e-4, betas=(0.9, 0.98), eps=1e-8)
+	optimizer = optim.Adam(list(model.parameters()) + list(trg_word_prj.parameters()), lr=6e-4, betas=(0.9, 0.98), eps=1e-8)
+	scheduler = optim.lr_scheduler.CyclicLR(optimizer, base_lr=6e-4, max_lr=2.0)
+	scheduler_sparse = optim.lr_scheduler.CyclicLR(optimizer_sparse, base_lr=6e-4, max_lr=2.0)
 
-	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, scheduler, scheduler_sparse, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)
