@@ -7,8 +7,10 @@ from tqdm import tqdm
 import pathlib, logging
 from rule_based_retriever.index import *
 from DataClass.data_utils import set_logger
-from collections import namedtuple
-
+from collections import namedtuple, Counter
+import gc
+from DataClass.data_utils import preprocess_tokens
+import numpy as np
 logger = logging.getLogger(__name__)
 
 
@@ -56,8 +58,8 @@ def generate_datasets(opt, max_lines = 10000):
 
 def get_params(p, debug = False, save = True, overwrite = False, verbose = False,
                unit = 'line', min_len = 10, distance_metric_x = 'nc',
-               distance_threshold_x = math.inf, distance_metric_y = 'c',
-               distance_threshold_y = math.inf, n_leftmost_tokens = 1, max_num_candidates = 1,
+               distance_threshold_x = 0.3, distance_metric_y = 'c',
+               distance_threshold_y = 2, n_leftmost_tokens = 1, max_num_candidates = 1,
                check_exact_match_suffix = False):
     opt = namedtuple('opt', ['path', 'debug', 'save', 'overwrite', 'verbose', 'unit', 'min_len',
                              'distance_metric_x', 'distance_threshold_x', 'distance_metric_y',
@@ -78,7 +80,13 @@ def load_saved_datasets(dataset_path, dataset_edit_path = None):
         dataset = pickle.load(f)
     f.close()
     return dataset, dataset_edit
-#
+
+def load_pickle(filename, obj):
+    with open(filename, 'wb') as file:
+        x = pickle.load(file)
+    file.close()
+    return x
+
 # def save_pickle(filename, obj):
 #     with open(filename, 'wb') as file:
 #         pickle.dump(obj, file , protocol=pickle.HIGHEST_PROTOCOL)
@@ -134,43 +142,53 @@ def readcsv(path):
     t1 = df.iloc[:, 0].tolist()
     t2 = df.iloc[:, 1].tolist()
     src = ' \n '.join(t1)
-    return [src]
+    return [src], len(t1)
 
-@ray.remote(num_cpus=5)
+@ray.remote
 def parallel_retriever(subdirectory, pickle_dir, debug = True, repo = False):
     opt = get_params(str(subdirectory))
-    print(opt)
-    logging.info(f'Params is : {opt}')
-    print("[main] Executing main function with options")
-
     if repo:
         sources, num_files = read_data(opt.path)
         dataset = construct_dataset(sources)  # D_proj = {(x, y)}
     else:
-        sources = readcsv(opt.path)
-        dataset = construct_dataset(sources)
+        sources, num_lines = readcsv(opt.path)
 
-    examples_with_suffix = construct_examples_with_suffix(dataset)  # For metadata
-    dir_name = opt.path.split('/')[-1].replace('.csv', '')
-    logging.info(f"Processing Directory {dir_name} ... ")
-    if debug:
-        result = []
-        for i, line in enumerate(dataset):
-            result.append(main(line, opt, examples_with_suffix, i))
-        result = list(filterfalse(lambda x: len(x) == 0, result))
-    else:
-        output = ray.get([main.remote(line, opt, examples_with_suffix, i) for i, line in enumerate(dataset)])
-        result = list(filterfalse(lambda x: len(x) == 0, output))
-    if opt.save:
-        fname_dataraw = '_'.join([str(dir_name), 'dataset.pkl'])
-        fname_edit_output = ''.join([str(dir_name), 'dataset_edit.pkl'])
-        with open(pickle_dir / fname_dataraw, 'wb') as f:
-            pickle.dump(dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
-        f.close()
-        with open(pickle_dir / fname_edit_output, 'wb') as f:
-            pickle.dump(result, f)
-        f.close()
-    return (subdirectory, result)
+    if num_lines < 1000:
+        print(opt)
+        logging.info(f'Params is : {opt}')
+        print("[main] Executing main function with options")
+        dataset = construct_dataset(sources)
+        examples_with_suffix = construct_examples_with_suffix(dataset)  # For metadata
+        dir_name = opt.path.split('/')[-1].replace('.csv', '')
+
+        # if opt.save:
+        #     fname_dataraw = '_'.join([str(dir_name), 'dataset.pkl'])
+        #     with open(pickle_dir / fname_dataraw, 'wb') as f:
+        #         pickle.dump(dataset, f, protocol=pickle.HIGHEST_PROTOCOL)
+        #     f.close()
+        del sources
+        gc.collect()
+
+        print(f"Processing Directory {dir_name} ... ")
+        if debug:
+            result = []
+            i = 0
+            while dataset:
+                line = dataset.pop()
+            # for i, line in enumerate(dataset):
+                result.append(main(line, opt, examples_with_suffix, i, top_k=3))
+        else:
+            output = ray.get([main.remote(line, opt, examples_with_suffix, i) for i, line in enumerate(dataset)])
+            result = list(filterfalse(lambda x: len(x) == 0, output))
+
+        if opt.save:
+            fname_edit_output = ''.join([str(dir_name), 'dataset_edit.pkl'])
+            with open(pickle_dir / fname_edit_output, 'wb') as f:
+                pickle.dump(result, f, protocol=pickle.HIGHEST_PROTOCOL)
+            f.close()
+        del result
+        gc.collect()
+    return subdirectory
 
 if __name__ == '__main__':
 
@@ -194,21 +212,28 @@ if __name__ == '__main__':
     # set_logger(log_dir / 'rule_based.log')
     p = pathlib.Path.cwd() / 'github_data' / 'repo_files'
     # subdirs = [x for x in p.iterdir() if 'tensorflow-vgg' in str(x)]
-    subdirs = [x for x in p.iterdir() if '.csv' in str(x)]
+    existing_files = [str(x).split('/')[-1] for x in pickle_dir.iterdir()]
+    finished_files = Counter(existing_files)
+    subdirs = [x for x in p.iterdir() if ('.csv' in str(x))
+               and (str(x).split('/')[-1].replace('.csv', 'dataset_edit.pkl') not in finished_files)]
+    # subdirs = [p / 'yt-dl_line_pairs.csv']
+    print(f'length of subdirs is {len(subdirs)}')
     retrieved_examples = {}
     # for i, subdir in enumerate(subdirs):
     #     name = str(subdir).split('/')[-1]
     #     if i % 100 == 0:
     #         print(f'Completed {i // len(subdirs)}')
-    #     retrieved_examples[subdir] = parallel_retriever(subdir, pickle_dir, debug = False)
+    #     retrieved_examples[subdir] = parallel_retriever(subdir, pickle_dir, debug = True)
+    # for subdirect in np.array_split(subdirs, 500):
     retrieved_repos = ray.get([parallel_retriever.remote(subdir, pickle_dir, debug = True) for subdir in subdirs])
-    for repo_name, result in retrieved_repos:
-        retrieved_examples[repo_name] = result
 
+    # for repo_name, result in retrieved_repos:
+        # retrieved_examples[repo_name] = result
 
     output_name = '_'.join([to_string_opt(opt), '.pkl'])
     with open(output_dir / output_name, 'wb') as f:
         pickle.dump(retrieved_examples, f)
     f.close()
+
     print(f'Length of final output is {len(retrieved_examples)}')
     logging.info(f'pickle file saved to {output_name}')
