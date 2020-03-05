@@ -7,7 +7,7 @@ def save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, schedu
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
             'optimizer_sparse': optimizer_sparse.state_dict(),
-            'scheduler': scheduler.state_dict()
+            'scheduler': scheduler.state_dict(),
             'scheduler_sparse': scheduler_sparse.state_dict()
         }, "checkpoint-{}.pth".format(suffix))
     else:

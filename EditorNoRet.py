@@ -66,9 +66,7 @@ class EditorNoRetrievalTrainer:
 				accuracies.append(n_correct/n_word)
 
 				pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
-				# print(pred.shape)
-				# print(trg_ys.shape)
-				# print(trg_ys)
+				
 				trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
 				trg_words = np.expand_dims(trg_words, axis=1)
 				bleu_scores.append(corpus_bleu(trg_words.tolist(), pred_words.tolist(), smoothing_function=SmoothingFunction().method1))
@@ -95,7 +93,7 @@ class EditorNoRetrievalTrainer:
 				trg_ys = batch_ys[:, 1:]
 				optimizer.zero_grad()
 
-				# print(batch_xs)
+				
 
 				pred_logits = model(batch_xs, batch_ys[:, :-1])
 				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
@@ -103,11 +101,11 @@ class EditorNoRetrievalTrainer:
 
 				loss.backward()
 				
-				torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
+				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 				optimizer.step()
 
-				if scheduler:
-					scheduler.step()
+				# if scheduler:
+					# scheduler.step()
 
 				total_mle_loss += loss.item()
 
@@ -122,6 +120,18 @@ class EditorNoRetrievalTrainer:
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
 					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
 			
+			for batch_idx, batch in enuemrate(tqdm(validation_loader, mininterval=2, leave=False)):
+				with torch.no_grad():
+					batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+					trg_ys = pd.DataFrame(batch_ys[:, 1:].numpy())
+					pred = model(batch_xs, batch_ys[:, :-1])
+					pred_max = pred.max(2)[1]
+					pred = pd.DataFrame(pred_max.numpy())
+					pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+					trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+					print(pred_words)
+					print(trg_words)
+
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
 

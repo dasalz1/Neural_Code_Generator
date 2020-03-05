@@ -55,7 +55,7 @@ class EditorNoRetrievalTrainerParallel:
 		n_correct = n_correct.masked_select(non_pad_mask).sum().item()
 		return loss, n_correct
 	
-	def validate_BLEU(self, model, validation_loader, epoch, tb=None):
+	def validate_BLEU(self, model, src_word_emb, trg_word_emb, trg_word_prj, validation_loader, epoch, tb=None):
 		model.eval()
 
 		bleu_scores = []
@@ -127,12 +127,12 @@ class EditorNoRetrievalTrainerParallel:
 				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
 				src_seq = src_word_emb(batch_xs).to(self.device)
 
-				enc_output = model.forward(src_seq=src_seq, src_mask=src_mask, module="encoder")
+				enc_output = model(src_seq=src_seq, src_mask=src_mask, module="encoder")
 
 				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
-				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
+				dec_output = model(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
 				pred_logits = (trg_word_prj(dec_output)*x_logit_scale)#.to(self.embed_device)
     			# pred_logits
 
