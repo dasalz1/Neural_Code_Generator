@@ -143,8 +143,8 @@ class EditorNoRetrievalTrainerParallel:
 
 				loss.backward()
 				
-				torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
-				torch.nn.utils.clip_grad_norm_(list(trg_word_emb.parameters()) + list(src_word_emb.parameters()) + list(trg_word_prj.parameters()), 0.1)
+				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+				torch.nn.utils.clip_grad_norm_(list(trg_word_emb.parameters()) + list(src_word_emb.parameters()) + list(trg_word_prj.parameters()), 1.0)
 				optimizer.step()
 				optimizer_sparse.step()
 

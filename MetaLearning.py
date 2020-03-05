@@ -16,7 +16,7 @@ import os
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3, (0.9, 0.995), 1e-8), model_params=None):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3, (0.9, 0.995), 1e-8), model_params=None):
 		super(Learner, self).__init__()
 
 		self.model = Transformer(*model_params)
@@ -29,6 +29,7 @@ class Learner(nn.Module):
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
 		self.process_id = process_id
 		self.num_iter = 0
+		self.world_size = world_size
 
 		# if process == 0:
 			# optim_params = optim_params.insert(0, self.model_parameters())
@@ -79,7 +80,13 @@ class Learner(nn.Module):
 
 
 		self.optimizer.zero_grad()
-		dummy_loss, _ = self._evaluate_model(temp_data)
+
+		dummy_query_x, dummy_query_y
+		pred_logits = self.model(dummy_query_x, dummy_query_y[:, :-1])
+		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
+		dummy_loss, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
+
+		# dummy_loss, _ = self.model(temp_data)
 		hooks = self._hook_grads(all_grads)
 
 		dummy_loss.backward()
@@ -94,7 +101,7 @@ class Learner(nn.Module):
 
 		print("finished meta")
 
-	def forward(self, num_updates, data_queue, data_queue2, data_queue3, data_queue4, data_event, process_event, tb=None, log_interval=100, checkpoint_interval=10000):
+	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=100, checkpoint_interval=10000):
 		while(True):
 			data_event.wait()
 			data = data_queue.get()
@@ -118,11 +125,6 @@ class Learner(nn.Module):
 
 			# meta gradients
 			support_x, support_y, query_x, query_y = map(lambda x: torch.LongTensor(x).to(self.device), data)
-			# if self.process_id == 0:
-				# print(support_x.shape)
-				# print(support_y.shape)
-				# print(query_x.shape)
-				# print(query_y.shape)
 			for i in range(num_updates):
 				self.meta_optimizer.zero_grad()
 				pred_logits = self.model(support_x, support_y[:, :-1])
@@ -140,7 +142,7 @@ class Learner(nn.Module):
 			non_pad_mask = query_y[: 1:].ne(PAD_IDX)
 			n_word = non_pad_mask.sum().item()
 
-			acc = torch.FloatTensor(n_correct / n_word)
+			acc = torch.FloatTensor([n_correct / n_word])
 
 
 			# loss, pred = self.model(query_x, query_y)
@@ -158,11 +160,11 @@ class Learner(nn.Module):
 				save_checkpoint(0, self.model, self.optimizer, suffix=str(self.num_iter))
 
 			for idx in range(len(all_grads)):
-				dist.reduce(all_grads[idx].data, op=dist.ReduceOp.SUM, async_op=True)
+				dist.reduce(all_grads[idx].data, 0, op=dist.ReduceOp.SUM, async_op=True)
 
 			if self.process_id == 0:
 				self.num_iter += 1
-				self._write_grads(original_state_dict, all_grads, (support_x[0], support_y[0]))
+				self._write_grads(original_state_dict, all_grads, (query_x, query_y))
 				# finished batch so can load data again from master
 				process_event.set()
 
@@ -172,23 +174,20 @@ class MetaTrainer:
 	def __init__(self, world_size, device='cpu', model_params=None):
 		self.world_size = world_size
 
-		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', model_params=model_params) for process_id in range(world_size)]
+		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params) for process_id in range(world_size)]
 		# gpu backend instead of gloo
 		self.backend = "gloo"#"nccl"
 		
-	def init_process(self, process_id, data_queue, data_queue2, data_queue3, data_queue4, data_event, process_event, num_updates, tb, address='localhost', port='29500'):
+	def init_process(self, process_id, data_queue, data_event, process_event, num_updates, tb, address='localhost', port='29500'):
 		os.environ['MASTER_ADDR'] = address
 		os.environ['MASTER_PORT'] = port
 		dist.init_process_group(self.backend, rank=process_id, world_size=self.world_size)
-		self.meta_learners[process_id](num_updates, data_queue, data_queue2, data_queue3, data_queue4, data_event, process_event, tb)
+		self.meta_learners[process_id](num_updates, data_queue, data_event, process_event, tb)
 
 
 	# dataloaders is list of the iterators of the dataloaders for each task
 	def train(self, data_loaders, tb=None, num_updates = 5, num_iters=250000):
 		data_queue = Queue()
-		data_queue2 = Queue()
-		data_queue3 = Queue()
-		data_queue4 = Queue()
 		# for notifying when to recieve data
 		data_event = Event()
 		# for notifying this method when to send new data
@@ -200,7 +199,7 @@ class MetaTrainer:
 		processes = []
 		for process_id in range(self.world_size):
 			processes.append(Process(target=self.init_process, 
-												args=(process_id, data_queue, data_queue2, data_queue3, data_queue4, data_event, 
+												args=(process_id, data_queue, data_event, 
 													process_event, num_updates, 
 													tb if process_id == 0 else None)))
 			processes[-1].start()
