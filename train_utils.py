@@ -32,7 +32,9 @@ def from_checkpoint_if_exists(model, optimizer, optimizer_sparse, scheduler, sch
             scheduler.load_state_dict(checkpoint['scheduler'])
             scheduler_sparse.load_state_dict(checkpoint['scheduler_sparse'])
 
-    return epoch, model, optimizer, optimizer_sparse, scheduler, scheduler_sparse
+        return epoch, model, optimizer, optimizer_sparse, scheduler, scheduler_sparse
+
+    return epoch, model, optimizer, optimizer_sparse
 
 
 def tb_mle_epoch(tb, loss_per_word, accuracy, epoch):

@@ -75,10 +75,17 @@ def main(args):
 	model.to(device)
 
 	trainer = EditorNoRetrievalTrainer(device)
-	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
-	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
+	temp_params = list(model.parameters())
 
-	trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	src_emb_params = list(model.encoder.src_word_emb.parameters())
+	trg_emb_params = list(mode.decoder.trg_word_emb.parameters())
+	temp_params.remove(src_emb_params[0])
+	temp_params.remove(trg_emb_params[0])
+
+	optimizer = optim.Adam(temp_params, lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
+	optimizer_sparse = optim.SparseAdam(src_emb_params + trg_emb_params, lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
+
+	trainer.train(model, optimizer, optimizer_sparse, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)

@@ -51,12 +51,12 @@ class EditorNoRetrievalTrainer:
 		with torch.no_grad():
 			for batch in tqdm(validation_loader):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
-				trg_ys = pd.DataFrame(batch_ys[:, 1:].numpy())
+				trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
 
 				pred = model(batch_xs, batch_ys[:, :-1])
 				# pred_max = pred.max(1)[1]
 				pred_max = pred.max(2)[1]
-				pred = pd.DataFrame(pred_max.numpy())
+				pred = pd.DataFrame(pred_max.to('cpu').numpy())
 
 				target = batch_ys[:, 1:].contiguous().view(-1)
 				non_pad_mask = target.ne(PAD_IDX)
@@ -78,9 +78,9 @@ class EditorNoRetrievalTrainer:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, optimizer, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
+	def train(self, model, optimizer, optimizer_sparse, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
-		# curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)
+		curr_epoch, model, optimizer, optimizer_sparse = from_checkpoint_if_exists(model, optimizer, optimizer_sparse)
 		
 
 		for epoch in range(epochs):
@@ -92,9 +92,9 @@ class EditorNoRetrievalTrainer:
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]
 				optimizer.zero_grad()
+				optimizer_sparse.zero_grad()
 
-				
-
+		
 				pred_logits = model(batch_xs, batch_ys[:, :-1])
 				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				loss, n_correct = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
@@ -103,9 +103,7 @@ class EditorNoRetrievalTrainer:
 				
 				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 				optimizer.step()
-
-				# if scheduler:
-					# scheduler.step()
+				optimizer_sparse.step()
 
 				total_mle_loss += loss.item()
 
@@ -117,21 +115,8 @@ class EditorNoRetrievalTrainer:
 				if tb is not None and batch_idx % log_interval == 0:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
-				# if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
-					# save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
-			
-			for batch_idx, batch in enumerate(tqdm(validation_loader, mininterval=2, leave=False)):
-				with torch.no_grad():
-					batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
-					trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
-					pred = model(batch_xs, batch_ys[:, :-1])
-					pred_max = pred.to('cpu').max(2)[1]
-					pred = pd.DataFrame(pred_max.numpy())
-					pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
-					trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
-					print(pred_words[0])
-					print(trg_words[0])
-					break
+				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
+					save_checkpoint(epoch, model, optimizer, optimizer_sparse, suffix=str(batch_idx))
 
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
@@ -139,6 +124,18 @@ class EditorNoRetrievalTrainer:
 			if tb is not None:
 				tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
 
-			# self.validate_BLEU(model, validation_loader, epoch, tb)
+			self.validate_BLEU(model, validation_loader, epoch, tb)
 
 
+# for batch_idx, batch in enumerate(tqdm(validation_loader, mininterval=2, leave=False)):
+# 	with torch.no_grad():
+# 		batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+# 		trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
+# 		pred = model(batch_xs, batch_ys[:, :-1])
+# 		pred_max = pred.to('cpu').max(2)[1]
+# 		pred = pd.DataFrame(pred_max.numpy())
+# 		pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+# 		trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+# 		print(pred_words[0])
+# 		print(trg_words[0])
+# 		break

@@ -36,12 +36,12 @@ def main(args):
 	torch.manual_seed(12324)
 
 	if args.embed_device is not None:
-		print('hi')
+		print('Embeddings on GPU')
 		embed_device = 'cuda:'+str(args.embed_device)
 		device_num = args.num_embed_devices
 		device = 'cuda:'+str(device_num)
 	else:
-		print('hey')
+		print('Embeddings on CPU')
 		embed_device = 'cpu'
 		device_num = 0
 		device = 'cuda:0'
