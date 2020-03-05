@@ -55,7 +55,7 @@ class EditorNoRetrievalTrainerParallel:
 		n_correct = n_correct.masked_select(non_pad_mask).sum().item()
 		return loss, n_correct
 	
-	def validate_BLEU(self, model, src_word_emb, trg_word_emb, trg_word_prj, validation_loader, epoch, tb=None):
+	def validate_BLEU(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, validation_loader, epoch, tb=None):
 		model.eval()
 
 		bleu_scores = []
@@ -170,4 +170,4 @@ class EditorNoRetrievalTrainerParallel:
 			if tb is not None:
 				tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
 
-			self.validate_BLEU(model, src_word_emb, trg_word_emb, trg_word_prj, validation_loader, epoch, tb)
+			self.validate_BLEU(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, validation_loader, epoch, tb)

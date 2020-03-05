@@ -54,26 +54,26 @@ def main(args):
 	emb_src_trg_weight_sharing = True
 	trg_emb_prj_weight_sharing = True
 	VOCAB_SIZE = len(word2idx)
-	num_validation_repos = 100
+	num_validation_repos = 50
 
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:150]]),
+	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:60]]),
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=min(120, int(args.batch_size/2)))
+							num_workers=max(120, int(args.batch_size/2)))
 
 	print("Finished creating data loader")
 	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
 
-	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
+	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[48:num_validation_repos]]),
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=min(120, int(args.batch_size/2)))
+							num_workers=max(120, int(args.batch_size/2)))
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)

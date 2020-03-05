@@ -32,7 +32,7 @@ def main(args):
 	torch.manual_seed(12324)
 
 	VOCAB_SIZE = len(word2idx)
-	num_validation_repos = 100
+	num_validation_repos = 50
 
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 
