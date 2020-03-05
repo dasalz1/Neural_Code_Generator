@@ -194,15 +194,15 @@ def threaded_tokenizer(lines, tokenize_lock, tokens, max_line_sz, filepath):
 		# if len(line_tokens) > max_line_sz[0]:
 			# max_line_sz[0] = len(line_tokens)
 			# open(filepath+'max_line_size.txt', 'a').write(str(len(line_tokens)) + '\n')
-		acquire_lock = False
+		# acquire_lock = False
 		for token in line_tokens:
-			if token in tokens:
-				tokenize_lock.acquire()
-				acquire_lock = True
+			# if token in tokens:
+				# tokenize_lock.acquire()
+				# acquire_lock = True
 			
 			# tokenize_lock.acquire()
 			tokens[token] = tokens.get(token, 0) + 1#len(tokens))
-			if acquire_lock:
-				acquire_lock = False
-				tokenize_lock.release()
+			# if acquire_lock:
+				# acquire_lock = False
+				# tokenize_lock.release()
 			# tokenize_lock.release()
