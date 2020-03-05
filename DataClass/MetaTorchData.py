@@ -63,7 +63,7 @@ class MetaRetrieved(Dataset):
         except:
             x = self.read_pandas_line_quote(idx)
 
-            x = np.array(fix_quote_strings(x[0, 0]) if self.retrieve_context else fix_quote_strings_context(x[0, 0]))
+            x = np.array(fix_quote_strings_context(x[0, 0], self.n_retrieved))
 
         
         query_x = [word2idx.get(token, UNKNOWN_IDX) for token in preprocess_tokens(tokenize_fine_grained(x[0, 0]), self.max_dim)]
@@ -134,7 +134,7 @@ class MetaRepo(Dataset):
         except:
             x = self.read_pandas_line_quote()
 
-            x = np.array(fix_quote_strings(x[0, 0]) if self.retrieve_context else fix_quote_strings_context(x[0, 0]))
+            x = np.array(fix_quote_strings(x[0, 0]) if self.retrieve_context else fix_quote_strings_context(x[0, 0], self.n_retrieved))
 
         x_tokens, y_tokens = self.words2tokens(x)
 
@@ -166,13 +166,19 @@ class MetaRepo(Dataset):
             dt.join()
 
         support_x, support_y = zip(*query_list)
-        support_x = torch.LongTensor(pd.DataFrame(support_x).values.astype('int64'))
-        support_y = torch.LongTensor(pd.DataFrame(support_y).values.astype('int64'))
+        # support_x = torch.LongTensor(pd.DataFrame(support_x).values.astype('int64'))
+        # support_y = torch.LongTensor(pd.DataFrame(support_x).values.astype('int64'))
 
 
-        query_x = torch.LongTensor(pd.DataFrame(query_x).values.astype('int64')).contiguous().view(1, -1)
-        query_y = torch.LongTensor(pd.DataFrame(query_y).values.astype('int64')).contiguous().view(1, -1)
+        # query_x = torch.LongTensor(pd.DataFrame(query_x).values.astype('int64')).contiguous().view(1, -1)
+        # query_y = torch.LongTensor(pd.DataFrame(query_y).values.astype('int64')).contiguous().view(1, -1)
         
+        support_x = pd.DataFrame(support_x).values.astype('int64')
+        support_y = pd.DataFrame(support_x).values.astype('int64')
+
+        query_x = pd.DataFrame(query_x).values.astype('int64').reshape(1, -1)
+        query_y = pd.DataFrame(query_y).values.astype('int64').reshape(1, -1)
+
         return support_x, support_y, query_x, query_y
 
 

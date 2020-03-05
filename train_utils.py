@@ -18,13 +18,11 @@ def save_checkpoint(epoch, model, optimizer, optimizer_sparse=None, scheduler=No
             'scheduler': scheduler.state_dict(),
             'scheduler_sparse': scheduler_sparse.state_dict()
         }, "checkpoint-{}.pth".format(suffix))
-        
     else:
         torch.save({
             'epoch': epoch,
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-            'optimizer_sparse': optimizer_sparse.state_dict()
         }, "checkpoint-{}.pth".format(suffix))
 
 def from_checkpoint_if_exists(model, optimizer, optimizer_sparse=None, scheduler=None, scheduler_sparse=None):
@@ -58,6 +56,17 @@ def from_checkpoint_if_exists(model, optimizer, optimizer_sparse=None, scheduler
             return epoch, model, optimizer, scheduler
 
     return epoch, model, optimizer
+
+def tb_mle_meta_batch(tb, loss, acc, num_iter):
+    tb.add_scalars(
+        {
+            "loss_meta_batch": loss,
+            "accuracy_meta_batch": acc,
+        },
+        group="meta_mle_train",
+        sub_group="batch",
+        global_step=num_iter
+    )
 
 
 def tb_mle_epoch(tb, loss_per_word, accuracy, epoch):
