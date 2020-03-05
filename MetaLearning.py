@@ -92,13 +92,16 @@ class Learner(nn.Module):
 		for h in hooks:
 			h.remove()
 
+		print("finished meta")
+
 	def forward(self, num_updates, data_queue, data_queue2, data_queue3, data_queue4, data_event, process_event, tb=None, log_interval=100, checkpoint_interval=10000):
 		while(True):
 			data_event.wait()
 			data = data_queue.get()
-			data_queue2 = data_queue2.get()
-			data_queue3 = data_queue3.get()
-			data_queue4 = data_queue4.get()
+			# data_queue2 = data_queue2.get()
+			# data_queue3 = data_queue3.get()
+			# data_queue4 = data_queue4.get()
+			# print(data[0])
 			dist.barrier()
 			data_event.clear()
 
@@ -114,33 +117,42 @@ class Learner(nn.Module):
 			self.model.train()
 
 			# meta gradients
-			support_x, support_y, query_x, query_y = map(lambda x: x.to(self.device), data)
+			support_x, support_y, query_x, query_y = map(lambda x: torch.LongTensor(x).to(self.device), data)
+			# if self.process_id == 0:
+				# print(support_x.shape)
+				# print(support_y.shape)
+				# print(query_x.shape)
+				# print(query_y.shape)
 			for i in range(num_updates):
 				self.meta_optimizer.zero_grad()
-				pred_logits = self.model(support_x, support_y)
+				pred_logits = self.model(support_x, support_y[:, :-1])
 				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				loss, n_correct = self.compute_mle_loss(pred_logits, support_y[:, 1:], smoothing=True)
 				loss.backward()
+				torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 				self.meta_optimizer.step()
 
-			pred_logits = self.model(query_x, query_y)
+
+			pred_logits = self.model(query_x, query_y[:, :-1])
 			pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 			loss, n_correct = self.compute_mle_loss(pred_logits, query_y[:, 1:], smoothing=True)
 
 			non_pad_mask = query_y[: 1:].ne(PAD_IDX)
 			n_word = non_pad_mask.sum().item()
 
-			acc = n_correct / n_word
+			acc = torch.FloatTensor(n_correct / n_word)
 
 
 			# loss, pred = self.model(query_x, query_y)
 			all_grads = autograd.grad(loss, self.model.parameters())
 
-			dist.reduce(loss, 0, op=dist.ReduceOp.MEAN, async_op=True)
-			dist.reduce(acc, 0, op=dist.ReduceOp.MEAN)
+			dist.reduce(loss, 0, op=dist.ReduceOp.SUM, async_op=True)
+			dist.reduce(acc, 0, op=dist.ReduceOp.SUM)
+
+
 
 			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0:
-				tb_mle_meta_batch(tb, loss.item(), acc, self.num_iter)
+				tb_mle_meta_batch(tb, loss.item()/self.world_size, acc/self.world_size, self.num_iter)
 			
 			if self.process_id == 0 and self.num_iter != 0 and self.num_iter % checkpoint_interval == 0:
 				save_checkpoint(0, self.model, self.optimizer, suffix=str(self.num_iter))
@@ -201,13 +213,15 @@ class MetaTrainer:
 			for task in tasks:
 				# place holder for sampling data from dataset
 				hey = next(data_loaders[task])
-				print(hey[0].shape)
+				# print(hey[0].shape)
 
 				# print(hey[0].shape)
-				data_queue.put(hey[0][0].numpy())
-				data_queue2.put(hey[1][0].numpy())
-				data_queue3.put(hey[2][0].numpy())
-				data_queue4.put(hey[3][0].numpy())
+				data_queue.put((hey[0].numpy()[0], hey[1].numpy()[0], 
+								hey[2].numpy()[0], hey[3].numpy()[0]))
+				# data_queue.put(hey[0][0].numpy())
+				# data_queue2.put(hey[1][0].numpy())
+				# data_queue3.put(hey[2][0].numpy())
+				# data_queue4.put(hey[3][0].numpy())
 			data_event.set()
 
 		new_model = self.meta_learners[0].model.state_dict()
