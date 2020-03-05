@@ -9,12 +9,13 @@ from multiprocessing import Process
 from DataClass.Constants import NO_CONTEXT_WORD#PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD
 
 MAX_REPO_THREADS = 32#160
-MAX_TOKENIZE_THREADS = 2048
+MAX_TOKENIZE_THREADS = 248
 MAX_REPO_LINES = 100000
 MIN_REPO_LINES = 100
 MAX_TOKEN_LINES = 10000
 SPLITTER_RANGE = 10
 MAX_LINE_CHARS = 128*10*2
+MAX_TOKENS = 128
 
 # random.seed(12325)#123259#97853#3858191#1
 # np.random.seed(12325)
@@ -189,11 +190,12 @@ def check_threads(threads):
 def threaded_tokenizer(lines, lock, tokens, max_line_sz, filepath):
 	for line in lines:
 		line_tokens = tokenize_fine_grained(line)
-		if len(line_tokens) > max_line_sz[0]:
-			max_line_sz[0] = len(line_tokens)
-			open(filepath+'max_line_size.txt', 'a').write(str(len(line_tokens)) + '\n')
+		line_tokens = line_tokens[:MAX_TOKENS]
+		# if len(line_tokens) > max_line_sz[0]:
+			# max_line_sz[0] = len(line_tokens)
+			# open(filepath+'max_line_size.txt', 'a').write(str(len(line_tokens)) + '\n')
 		for token in line_tokens:
-			if token in tokens and tokens[token] > 5: continue
+			# if token in tokens and tokens[token] > 5: continue
 			lock.acquire()
 			tokens[token] = tokens.get(token, 0) + 1#len(tokens))
 			lock.release()

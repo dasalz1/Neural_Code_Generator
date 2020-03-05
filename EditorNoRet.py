@@ -120,7 +120,7 @@ class EditorNoRetrievalTrainer:
 				# if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
 					# save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
 			
-			for batch_idx, batch in enuemrate(tqdm(validation_loader, mininterval=2, leave=False)):
+			for batch_idx, batch in enumerate(tqdm(validation_loader, mininterval=2, leave=False)):
 				with torch.no_grad():
 					batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 					trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
