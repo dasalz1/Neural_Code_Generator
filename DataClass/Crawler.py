@@ -187,7 +187,7 @@ def check_threads(threads):
 
 	return spawn_new
 
-def threaded_tokenizer(lines, lock, tokens, max_line_sz, filepath):
+def threaded_tokenizer(lines, tokenize_lock, tokens, max_line_sz, filepath):
 	for line in lines:
 		line_tokens = tokenize_fine_grained(line)
 		line_tokens = line_tokens[:MAX_TOKENS]
@@ -195,7 +195,7 @@ def threaded_tokenizer(lines, lock, tokens, max_line_sz, filepath):
 			# max_line_sz[0] = len(line_tokens)
 			# open(filepath+'max_line_size.txt', 'a').write(str(len(line_tokens)) + '\n')
 		for token in line_tokens:
-			# if token in tokens and tokens[token] > 5: continue
-			lock.acquire()
+			if token in tokens: continue# and tokens[token] > 5: continue
+			tokenize_lock.acquire()
 			tokens[token] = tokens.get(token, 0) + 1#len(tokens))
-			lock.release()
+			tokenize_lock.release()
