@@ -120,18 +120,18 @@ class EditorNoRetrievalTrainer:
 				# if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
 					# save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
 			
-		for batch_idx, batch in enuemrate(tqdm(validation_loader, mininterval=2, leave=False)):
-			with torch.no_grad():
-				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
-				trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
-				pred = model(batch_xs, batch_ys[:, :-1])
-				pred_max = pred.to('cpu').max(2)[1]
-				pred = pd.DataFrame(pred_max.numpy())
-				pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
-				trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
-				print(pred_words[0])
-				print(trg_words[0])
-				break
+			for batch_idx, batch in enuemrate(tqdm(validation_loader, mininterval=2, leave=False)):
+				with torch.no_grad():
+					batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+					trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
+					pred = model(batch_xs, batch_ys[:, :-1])
+					pred_max = pred.to('cpu').max(2)[1]
+					pred = pd.DataFrame(pred_max.numpy())
+					pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+					trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+					print(pred_words[0])
+					print(trg_words[0])
+					break
 
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
