@@ -1,6 +1,6 @@
 import os, torch
 
-def save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, scheduler_sparse, suffix="default"):
+def save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler=None, scheduler_sparse=None, suffix="default"):
     if scheduler:
         torch.save({
             'epoch': epoch,
@@ -18,7 +18,7 @@ def save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, schedu
             'optimizer_sparse': optimizer_sparse.state_dict()
         }, "checkpoint-{}.pth".format(suffix))
 
-def from_checkpoint_if_exists(model, optimizer, optimizer_sparse, scheduler, scheduler_sparse):
+def from_checkpoint_if_exists(model, optimizer, optimizer_sparse, scheduler=None, scheduler_sparse=None):
     epoch = 0
     if os.path.isfile("checkpoint.pth"):
         print("Loading existing checkpoint...")

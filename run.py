@@ -67,7 +67,6 @@ def main(args):
 	src_emb_params = list(model.encoder.src_word_emb.parameters())
 	trg_emb_params = list(model.decoder.trg_word_emb.parameters())
 	temp_params.remove(src_emb_params[0])
-	temp_params.remove(trg_emb_params[0])
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
