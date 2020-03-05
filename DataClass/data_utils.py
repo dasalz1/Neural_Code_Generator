@@ -61,7 +61,7 @@ def fix_quote_strings_context(v, n):
     values.append(check_quote_str(v[:-1]))
     return [values]
 
-def create_vocab_dictionary(path, file, save=True):
+def create_vocab_dictionary(path, file, save=True, filter_count=300):
     if os.path.exists(path+'/word2idx_tokens.pickle'):
         return pickle.load(open(path+'/word2idx_tokens.pickle', 'rb')), pickle.load(open(path+'/idx2word_tokens.pickle', 'rb'))
 
@@ -94,7 +94,7 @@ def create_vocab_dictionary(path, file, save=True):
 
     embedding_idx = SEP_RET_IDX+1
     for word, count in tokens_dict.items():
-        if count < 6: continue
+        if count < filter_count: continue
         word2idx[word] = embedding_idx
         idx2word[embedding_idx] = word
         embedding_idx+=1
