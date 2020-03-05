@@ -62,11 +62,6 @@ def main(args):
 						n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
 						trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True)
 
-	temp_params = list(model.parameters())
-
-	src_emb_params = list(model.encoder.src_word_emb.parameters())
-	trg_emb_params = list(model.decoder.trg_word_emb.parameters())
-	temp_params.remove(src_emb_params[0])
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -82,10 +77,10 @@ def main(args):
 
 	trainer = EditorNoRetrievalTrainer(device)
 
-	optimizer = optim.Adam(temp_params, lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
-	optimizer_sparse = optim.SparseAdam(src_emb_params + trg_emb_params, lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
+	optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
+	# optimizer_sparse = optim.SparseAdam(src_emb_params + trg_emb_params, lr=1e-3, betas=(0.9, 0.995), eps=1e-8)
 
-	trainer.train(model, optimizer, optimizer_sparse, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)
