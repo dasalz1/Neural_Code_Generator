@@ -80,7 +80,7 @@ class EditorNoRetrievalTrainer:
 
 	def train(self, model, optimizer, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
-		curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)
+		# curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)
 		
 
 		for epoch in range(epochs):
@@ -117,20 +117,21 @@ class EditorNoRetrievalTrainer:
 				if tb is not None and batch_idx % log_interval == 0:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
-				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
-					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
+				# if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
+					# save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
 			
-			for batch_idx, batch in enuemrate(tqdm(validation_loader, mininterval=2, leave=False)):
-				with torch.no_grad():
-					batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
-					trg_ys = pd.DataFrame(batch_ys[:, 1:].numpy())
-					pred = model(batch_xs, batch_ys[:, :-1])
-					pred_max = pred.max(2)[1]
-					pred = pd.DataFrame(pred_max.numpy())
-					pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
-					trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
-					print(pred_words)
-					print(trg_words)
+		for batch_idx, batch in enuemrate(tqdm(validation_loader, mininterval=2, leave=False)):
+			with torch.no_grad():
+				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+				trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
+				pred = model(batch_xs, batch_ys[:, :-1])
+				pred_max = pred.to('cpu').max(2)[1]
+				pred = pd.DataFrame(pred_max.numpy())
+				pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+				trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+				print(pred_words[0])
+				print(trg_words[0])
+				break
 
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
@@ -138,6 +139,6 @@ class EditorNoRetrievalTrainer:
 			if tb is not None:
 				tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
 
-			self.validate_BLEU(model, validation_loader, epoch, tb)
+			# self.validate_BLEU(model, validation_loader, epoch, tb)
 
 
