@@ -78,9 +78,9 @@ class EditorNoRetrievalTrainer:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, optimizer, optimizer_sparse, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
+	def train(self, model, optimizer, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		
-		curr_epoch, model, optimizer, optimizer_sparse = from_checkpoint_if_exists(model, optimizer, optimizer_sparse)
+		curr_epoch, model, optimizer = from_checkpoint_if_exists(model, optimizer, optimizer_sparse)
 		
 
 		for epoch in range(epochs):

@@ -51,7 +51,7 @@ def from_checkpoint_if_exists(model, optimizer, optimizer_sparse=None, scheduler
             optimizer_sparse.load_state_dict(checkpoint['optimizer_sparse'])
             return epoch, model, optimizer, optimizer_sparse
             # scheduler_sparse.load_state_dict(checkpoint['scheduler_sparse'])
-        elif if scheduler is not None and 'scheduler' in checkpoint:
+        elif scheduler is not None and 'scheduler' in checkpoint:
             scheduler.load_state_dict(checkpoint['scheduler'])
 
 
