@@ -9,6 +9,7 @@ import pandas as pd
 from DataClass.torchData import idx2word
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from nltk.translate import bleu
+from transformers import AdamW, get_cosine_schedule_with_warmup
 
 class EditorNoRetrievalTrainer:
 
@@ -78,21 +79,17 @@ class EditorNoRetrievalTrainer:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, optimizer, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
-		
-		curr_epoch, model, optimizer = from_checkpoint_if_exists(model, optimizer)
-		
-
+	def train(self, model, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		for epoch in range(epochs):
 			model.train()
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
+			optimizer = AdamW(model.parameters(), lr=1e-3)
+			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]
-				optimizer.zero_grad()
-
 		
 				pred_logits = model(batch_xs, batch_ys[:, :-1])
 				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
@@ -101,9 +98,11 @@ class EditorNoRetrievalTrainer:
 				loss.backward()
 				
 				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+				
 				optimizer.step()
-
+				scheduler.step()
 				total_mle_loss += loss.item()
+				optimizer.zero_grad()
 
 				non_pad_mask = trg_ys.ne(PAD_IDX)
 				n_word = non_pad_mask.sum().item()
@@ -114,7 +113,7 @@ class EditorNoRetrievalTrainer:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
-					save_checkpoint(epoch, model, optimizer, suffix=str(batch_idx))
+					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
 
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total

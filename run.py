@@ -3,7 +3,6 @@ from transformer.Models import Transformer
 from DataClass.torchData import *
 from DataClass.Constants import PAD_IDX
 from DataClass.torchData import MAX_LINE_LENGTH
-import torch.optim as optim
 from EditorNoRet import EditorNoRetrievalTrainer
 from torch.utils.data import ConcatDataset, DataLoader
 import torch
@@ -76,10 +75,7 @@ def main(args):
 
 	trainer = EditorNoRetrievalTrainer(device)
 
-	optimizer = optim.Adam(model.parameters(), lr=0.2, betas=(0.9, 0.98), eps=1e-8)
-	
-
-	trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)

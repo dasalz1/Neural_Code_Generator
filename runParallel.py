@@ -3,7 +3,6 @@ from transformer.ModelsParallel import TransformerParallel
 from DataClass.torchData import *
 from DataClass.Constants import PAD_IDX
 from DataClass.torchData import MAX_LINE_LENGTH
-import torch.optim as optim
 from EditorNoRetParallel import EditorNoRetrievalTrainerParallel
 from torch.utils.data import ConcatDataset, DataLoader
 import torch
@@ -11,7 +10,6 @@ from torch import nn
 from datetime import date
 import argparse, random
 import numpy as np
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--filepath", default='../repo_files', type=str)
@@ -114,10 +112,8 @@ def main(args):
 	src_word_emb.to(embed_device); trg_word_emb.to(embed_device); trg_word_prj.to(embed_device)
 
 	trainer = EditorNoRetrievalTrainerParallel(embed_device, device)
-	optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=0.2, betas=(0.9, 0.98), eps=1e-8)
-	optimizer = optim.Adam(list(model.parameters()) + list(trg_word_prj.parameters()), lr=0.2, betas=(0.9, 0.98), eps=1e-8)
 
-	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 from DataClass.Constants import PAD_IDX, UNKNOWN_WORD
 from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_epoch, tb_mle_batch, tb_bleu_validation_epoch
 from tqdm import tqdm
@@ -106,23 +107,26 @@ class EditorNoRetrievalTrainerParallel:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, scheduler=None, scheduler_sparse=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
-		
-		curr_epoch, model, optimizer, optimizer_sparse = from_checkpoint_if_exists(model, optimizer, optimizer_sparse)
-		
+	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 
 		for epoch in range(epochs):
 			model.train()
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
+			
+			optimizer = AdamW(model.parameters(), lr=1e-3)
+			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
+
+			optimizer = AdamW(list(model.parameters()) + list(trg_word_prj.parameters()), lr=1e-3)
+			optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=1e-3, betas=(0.9, 0.98), eps=1e-8)
+			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
+			scheduler_sparse = get_cosine_schedule_with_warmup(optimizer_sparse, num_warmup_steps=32000, num_training_steps=len(data_loader), num_cycles=0.5, last_epoch=-1)
+
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
 				batch_xs, batch_ys = map(lambda x: x.to(self.embed_device), batch)#.to(self.device), batch)
 				# batch_xs, batch_ys = batch
 				trg_ys = batch_ys[:, 1:]#.to('cuda:0')#self.device)
-
-				optimizer.zero_grad()
-				optimizer_sparse.zero_grad()
 
 				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
 				src_seq = src_word_emb(batch_xs).to(self.device)
@@ -148,10 +152,11 @@ class EditorNoRetrievalTrainerParallel:
 				optimizer.step()
 				optimizer_sparse.step()
 
-				if scheduler:
-					scheduler.step()
-
+				scheduler.step()
+				scheduler_sparse.step()
 				total_mle_loss += loss.item()
+				optimizer.zero_grad()
+				optimizer_sparse.zero_grad()				
 
 				non_pad_mask = trg_ys.ne(PAD_IDX)
 				n_word = non_pad_mask.sum().item()
@@ -162,7 +167,7 @@ class EditorNoRetrievalTrainerParallel:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
-					save_checkpoint(epoch, model, optimizer, optimizer_sparse, suffix=str(batch_idx))
+					save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, scheduler_sparse, suffix=str(batch_idx))
 			
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total

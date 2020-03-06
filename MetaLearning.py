@@ -81,7 +81,7 @@ class Learner(nn.Module):
 
 		self.optimizer.zero_grad()
 
-		dummy_query_x, dummy_query_y
+		dummy_query_x, dummy_query_y = temp_data
 		pred_logits = self.model(dummy_query_x, dummy_query_y[:, :-1])
 		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 		dummy_loss, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
@@ -105,10 +105,6 @@ class Learner(nn.Module):
 		while(True):
 			data_event.wait()
 			data = data_queue.get()
-			# data_queue2 = data_queue2.get()
-			# data_queue3 = data_queue3.get()
-			# data_queue4 = data_queue4.get()
-			# print(data[0])
 			dist.barrier()
 			data_event.clear()
 
