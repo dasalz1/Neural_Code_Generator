@@ -10,7 +10,7 @@ import pandas as pd
 from DataClass.torchData import idx2word
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from nltk.translate import bleu
-
+from transformers import AdamW, get_cosine_schedule_with_warmup
 
 def get_pad_mask(seq, pad_idx):
     return (seq != pad_idx).unsqueeze(-2)
