@@ -9,6 +9,7 @@ import pandas as pd
 from DataClass.torchData import idx2word
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from nltk.translate import bleu
+from transformers import AdamW, get_cosine_schedule_with_warmup
 
 class EditorNoRetrievalTrainer:
 
@@ -51,12 +52,12 @@ class EditorNoRetrievalTrainer:
 		with torch.no_grad():
 			for batch in tqdm(validation_loader):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
-				trg_ys = pd.DataFrame(batch_ys[:, 1:].numpy())
+				trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
 
 				pred = model(batch_xs, batch_ys[:, :-1])
 				# pred_max = pred.max(1)[1]
 				pred_max = pred.max(2)[1]
-				pred = pd.DataFrame(pred_max.numpy())
+				pred = pd.DataFrame(pred_max.to('cpu').numpy())
 
 				target = batch_ys[:, 1:].contiguous().view(-1)
 				non_pad_mask = target.ne(PAD_IDX)
@@ -66,9 +67,7 @@ class EditorNoRetrievalTrainer:
 				accuracies.append(n_correct/n_word)
 
 				pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
-				# print(pred.shape)
-				# print(trg_ys.shape)
-				# print(trg_ys)
+				
 				trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
 				trg_words = np.expand_dims(trg_words, axis=1)
 				bleu_scores.append(corpus_bleu(trg_words.tolist(), pred_words.tolist(), smoothing_function=SmoothingFunction().method1))
@@ -80,36 +79,30 @@ class EditorNoRetrievalTrainer:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, optimizer, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
-		
-		curr_epoch, model, optimizer, scheduler = from_checkpoint_if_exists(model, optimizer, scheduler)
-		
-
+	def train(self, model, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 		for epoch in range(epochs):
 			model.train()
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
+			optimizer = AdamW(model.parameters(), lr=1e-3)
+			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]
-				optimizer.zero_grad()
-
-				# print(batch_xs)
-
+		
 				pred_logits = model(batch_xs, batch_ys[:, :-1])
 				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				loss, n_correct = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
 
 				loss.backward()
 				
-				torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
+				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+				
 				optimizer.step()
-
-				if scheduler:
-					scheduler.step()
-
+				scheduler.step()
 				total_mle_loss += loss.item()
+				optimizer.zero_grad()
 
 				non_pad_mask = trg_ys.ne(PAD_IDX)
 				n_word = non_pad_mask.sum().item()
@@ -121,7 +114,7 @@ class EditorNoRetrievalTrainer:
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
 					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
-			
+
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
 
@@ -131,3 +124,15 @@ class EditorNoRetrievalTrainer:
 			self.validate_BLEU(model, validation_loader, epoch, tb)
 
 
+# for batch_idx, batch in enumerate(tqdm(validation_loader, mininterval=2, leave=False)):
+# 	with torch.no_grad():
+# 		batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
+# 		trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
+# 		pred = model(batch_xs, batch_ys[:, :-1])
+# 		pred_max = pred.to('cpu').max(2)[1]
+# 		pred = pd.DataFrame(pred_max.numpy())
+# 		pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+# 		trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+# 		print(pred_words[0])
+# 		print(trg_words[0])
+# 		break

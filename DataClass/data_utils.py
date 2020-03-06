@@ -1,5 +1,6 @@
-import glob, os, re, csv
+import glob, os, re, csv, logging, pickle
 from string import Template
+from DataClass.Constants import PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD, SEP_CONTEXT_WORD, SEP_CONTEXT_IDX, SEP_PAIR_WORD, SEP_PAIR_IDX, SEP_RET_WORD, SEP_RET_IDX
 
 CODE_TYPE = ".py"
 
@@ -13,6 +14,99 @@ number_with_alpha_ptr = re.compile(r'(?<=[a-zA-Z])([-+]?\d*\.\d+|\d+)')  # split
 string_ptr = re.compile(r'".*?"|\'.*?\'')
 code_ptr = re.compile(r"([^a-zA-Z0-9])")
 whitespace_ptr = re.compile(r"(\s+)")
+
+
+def preprocess_tokens(tokens, max_dim):
+    tokens = [START_WORD] + tokens
+    n = len(tokens) + 1
+    # minus one since end word needs to go on too
+    tokens = tokens[:min(n, max_dim-1)] + [END_WORD] + [PAD_WORD]*max(0, max_dim-n)
+    return tokens
+
+def preprocess_context(context, n, max_dim):
+    context_tokens = preprocess_tokens(tokenize_fine_grained(context[0, 0]), max_dim)
+    context_tokens += [SEP_CONTEXT_WORD]
+    
+    for idx in range(n-1):
+        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2+1]), max_dim) + [SEP_PAIR_WORD]
+        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2+2]), max_dim) + [SEP_RET_WORD]
+    
+    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -3]), max_dim) + [SEP_PAIR_WORD]
+    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -2]), max_dim)
+    return context_tokens
+
+def check_quote_str(line):
+    if "\'" in line:
+        return line.replace('"', "'")
+    else:
+        return line.replace('""', '"').replace("'", '"')
+
+def fix_quote_strings(v):
+    idx = v.find('","')
+    x, y = v[1:idx], v[idx+3:-1]
+    x = check_quote_str(x)
+    y = check_quote_str(y)
+    
+    return [[x, y]]
+
+def fix_quote_strings_context(v, n):
+    idx = v.find('","')
+    x = check_quote_str(v[1:idx])
+    values = [x]
+    v = v[idx+3:]
+    for _ in range(n*2):
+        idx = v.find('","')
+        values.append(check_quote_str(v[:idx]))
+        v = v[idx+3:]
+    values.append(check_quote_str(v[:-1]))
+    return [values]
+
+def create_vocab_dictionary(path, file, save=True, filter_count=500):
+    if os.path.exists(path+'/word2idx_tokens.pickle'):
+        return pickle.load(open(path+'/word2idx_tokens.pickle', 'rb')), pickle.load(open(path+'/idx2word_tokens.pickle', 'rb'))
+
+    tokens_dict = pickle.load(open(path+'/'+file, 'rb'))
+    idx2word = {}
+    word2idx = {}
+
+    if PAD_WORD in tokens_dict: del tokens_dict[PAD_WORD]
+    if NO_CONTEXT_WORD in tokens_dict: del tokens_dict[NO_CONTEXT_WORD]
+    if START_WORD in tokens_dict: del tokens_dict[START_WORD]
+    if END_WORD in tokens_dict: del tokens_dict[END_WORD]
+    if UNKNOWN_WORD in tokens_dict: del tokens_dict[UNKNOWN_WORD]
+    
+    word2idx[PAD_WORD] = PAD_IDX
+    word2idx[END_WORD] = END_IDX
+    word2idx[START_WORD] = START_IDX
+    word2idx[NO_CONTEXT_WORD] = NO_CONTEXT_IDX
+    word2idx[UNKNOWN_WORD] = UNKNOWN_IDX
+    word2idx[SEP_CONTEXT_WORD] = SEP_CONTEXT_IDX
+    word2idx[SEP_PAIR_WORD] = SEP_PAIR_IDX
+    word2idx[SEP_RET_WORD] = SEP_RET_IDX
+    idx2word[PAD_IDX] = PAD_WORD
+    idx2word[END_IDX] = END_WORD
+    idx2word[START_IDX] = START_WORD
+    idx2word[NO_CONTEXT_IDX] = NO_CONTEXT_IDX
+    idx2word[UNKNOWN_IDX] = UNKNOWN_WORD
+    idx2word[SEP_CONTEXT_IDX] = SEP_CONTEXT_WORD
+    idx2word[SEP_PAIR_IDX] = SEP_PAIR_WORD
+    idx2word[SEP_RET_IDX] = SEP_RET_WORD
+
+    embedding_idx = SEP_RET_IDX+1
+    for word, count in tokens_dict.items():
+        if count < filter_count: continue
+        word2idx[word] = embedding_idx
+        idx2word[embedding_idx] = word
+        embedding_idx+=1
+
+
+    if save:
+        pickle.dump(word2idx, open(path+'/word2idx_tokens.pickle', 'wb'))
+        pickle.dump(idx2word, open(path+'/idx2word_tokens.pickle', 'wb'))
+
+    return word2idx, idx2word
+
+    # {word:idx for idx, word in enumerate(tokens_dict)}
 
 
 def preprocess_source(source):
@@ -264,3 +358,20 @@ def get_urls_from_csv(path_csv):
                 urls.append(url_template.substitute(url=row[0]))
     print(f'Read {len(urls)} urls from csv file')
     return urls
+
+
+# Logger
+def set_logger(log_path):
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    if not logger.handlers:
+        file_handler = logging.FileHandler(log_path)
+        file_handler.setFormatter((logging.Formatter('%(asctime)s:%(levelname)s: %(message)s')))
+        logger.addHandler(file_handler)
+
+        stream_handler = logging.StreamHandler(log_path)
+        stream_handler.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(stream_handler)
+
+# Metric

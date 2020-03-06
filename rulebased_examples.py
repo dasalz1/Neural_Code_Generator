@@ -149,8 +149,8 @@ if __name__ == '__main__':
                           .apply(lambda x: preprocess_tokens(x, torchData.MAX_LINE_LENGTH))
                           .apply(lambda y: list(itertools.filterfalse(lambda x: x == '<PAD>' or x == '<BOS>' or x == '<EOS>', y))))
 
-    # bleu_scores = [btok(y_tokens.iloc[i], yp_tokens.iloc[i]) for i in range(y_tokens.shape[0])]
-    # bleu_mean = np.mean(bleu_scores)
+    bleu_scores = [btok(y_tokens.iloc[i], yp_tokens.iloc[i]) for i in range(y_tokens.shape[0])]
+    bleu_mean = np.mean(bleu_scores)
     # bleu_mean_tr = np.mean(bleu_scores[:round(0.7 * len(bleu_scores))]) # 0.715201
     # bleu_mean_te = np.mean(bleu_scores[round(0.7 * len(bleu_scores)):])
     ray.shutdown()

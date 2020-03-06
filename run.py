@@ -3,7 +3,6 @@ from transformer.Models import Transformer
 from DataClass.torchData import *
 from DataClass.Constants import PAD_IDX
 from DataClass.torchData import MAX_LINE_LENGTH
-import torch.optim as optim
 from EditorNoRet import EditorNoRetrievalTrainer
 from torch.utils.data import ConcatDataset, DataLoader
 import torch
@@ -27,31 +26,30 @@ parser.add_argument("--epochs", default=10, type=int)
 args = parser.parse_args()
 
 def main(args):
-	random.seed(12324)
-	np.random.seed(12324)
-	torch.manual_seed(12324)
+	random.seed(68492)
+	np.random.seed(68492)
+	torch.manual_seed(68492)
 
 	VOCAB_SIZE = len(word2idx)
-	num_validation_repos = 100
+	num_validation_repos = 50
 
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:150]]),
+	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=min(120, int(args.batch_size/2)))
+							num_workers=max(120, args.batch_size))
 
 	print("Finished creating data loader")
-	# data_loader = DataLoader(PairDataset(args.filepath+'/'+repo_files[30]), batch_size=args.batch_size, shuffle=True, collate_fn=batch_collate_fn)
 
 	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=min(120, int(args.batch_size/2)))
+							num_workers=max(120, args.batch_size))
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
@@ -61,6 +59,7 @@ def main(args):
 						n_head=args.num_heads, d_k=args.key_dimension, d_v=args.value_dimension, dropout=args.dropout,
 						n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
 						trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True)
+
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -75,10 +74,8 @@ def main(args):
 	model.to(device)
 
 	trainer = EditorNoRetrievalTrainer(device)
-	optimizer = optim.Adam(model.parameters(), lr=6e-4, betas=(0.9, 0.995), eps=1e-8)
-	scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[round(0.25 * num_iterations), round(0.5 * num_iterations), round(0.75 * num_iterations)], gamma=0.1)
 
-	trainer.train(model, optimizer, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+	trainer.train(model, data_loader, validation_loader, tb=tb, epochs=args.epochs)
 
 if __name__=='__main__':
 	main(args)

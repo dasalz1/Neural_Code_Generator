@@ -18,9 +18,12 @@ class PairDatasetLazy(Dataset):
     def __getitem__(self, idx):
         x = next(pd.read_csv(self.filename,
                             skiprows=idx * self.chunksize+1,
-                            chunksize=self.chunksize, header=None))
-    
-        return x.values[0][0], x.values[0][1]
+                            chunksize=self.chunksize, header=None, dtype=str)).fillna('OSOFo').values
+        
+        x_tokens = tokenize_fine_grained(x[0, 0])# for idx in range(self.chunksize)]
+        y_tokens = tokenize_fine_grained(x[0, 1])# for idx in range(self.chunksize)]
+
+        return x_tokens, y_tokens
 
 # dataset dir is directory assuming new subdirectories
 def createDataLoaderAllFiles(dataset_dir, dataset_class=PairDatasetLazy, shuffle=True, batch_size=128):

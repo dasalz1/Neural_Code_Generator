@@ -1,8 +1,9 @@
 /Retrieve-and-Edit-Framework/datasets/*
+pickle_files/
+repo_files/
 scrape_github/
 DataClass/repo_files/
 DataClass/__pycache__/
-untitled.py
-untitled2.py
 /contextual_autocomplete/github/
-/runs/
+electron_line_pairs.csv
+lantern_line_pairs.csv

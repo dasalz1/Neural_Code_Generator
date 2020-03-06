@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 from DataClass.Constants import PAD_IDX, UNKNOWN_WORD
 from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_epoch, tb_mle_batch, tb_bleu_validation_epoch
 from tqdm import tqdm
@@ -9,7 +10,7 @@ import pandas as pd
 from DataClass.torchData import idx2word
 from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from nltk.translate import bleu
-
+from transformers import AdamW, get_cosine_schedule_with_warmup
 
 def get_pad_mask(seq, pad_idx):
     return (seq != pad_idx).unsqueeze(-2)
@@ -55,7 +56,7 @@ class EditorNoRetrievalTrainerParallel:
 		n_correct = n_correct.masked_select(non_pad_mask).sum().item()
 		return loss, n_correct
 	
-	def validate_BLEU(self, model, validation_loader, epoch, tb=None):
+	def validate_BLEU(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, validation_loader, epoch, tb=None):
 		model.eval()
 
 		bleu_scores = []
@@ -66,7 +67,7 @@ class EditorNoRetrievalTrainerParallel:
 				# batch_ys = batch_ys.to(self.device)
 				batch_xs, batch_ys = map(lambda x: x.to(self.embed_device), batch)
 				# trg_ys = batch_ys[:, 1:].to(self.device)
-				trg_ys = pd.DataFrame(batch_ys[:, 1:].numpy())
+				trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
 
 
 				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
@@ -82,7 +83,7 @@ class EditorNoRetrievalTrainerParallel:
 
 				# pred_max = pred.max(1)[1]
 				pred_max = pred.max(2)[1]
-				pred = pd.DataFrame(pred_max.numpy())
+				pred = pd.DataFrame(pred_max.to('cpu').numpy())
 
 				target = batch_ys[:, 1:].contiguous().view(-1)
 				non_pad_mask = target.ne(PAD_IDX)
@@ -106,33 +107,36 @@ class EditorNoRetrievalTrainerParallel:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, optimizer, optimizer_sparse, data_loader, validation_loader, scheduler=None, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
-		
-		curr_epoch, model, optimizer, optimizer_sparse, scheduler = from_checkpoint_if_exists(model, optimizer, optimizer_sparse, scheduler)
-		
+	def train(self, model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
 
 		for epoch in range(epochs):
 			model.train()
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
+			
+			optimizer = AdamW(model.parameters(), lr=1e-3)
+			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
+
+			optimizer = AdamW(list(model.parameters()) + list(trg_word_prj.parameters()), lr=1e-3)
+			optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=1e-3, betas=(0.9, 0.98), eps=1e-8)
+			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
+			scheduler_sparse = get_cosine_schedule_with_warmup(optimizer_sparse, num_warmup_steps=32000, num_training_steps=len(data_loader), num_cycles=0.5, last_epoch=-1)
+
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
 				batch_xs, batch_ys = map(lambda x: x.to(self.embed_device), batch)#.to(self.device), batch)
 				# batch_xs, batch_ys = batch
 				trg_ys = batch_ys[:, 1:]#.to('cuda:0')#self.device)
 
-				optimizer.zero_grad()
-				optimizer_sparse.zero_grad()
-
 				src_mask = (batch_xs != PAD_IDX).unsqueeze(-2).to(self.device)
 				src_seq = src_word_emb(batch_xs).to(self.device)
 
-				enc_output = model.forward(src_seq=src_seq, src_mask=src_mask, module="encoder")
+				enc_output = model(src_seq=src_seq, src_mask=src_mask, module="encoder")
 
 				trg_mask = (get_pad_mask(batch_ys[:, :-1], PAD_IDX) & get_subsequent_mask(batch_ys[:, :-1])).to(self.device)
 				trg_seq = trg_word_emb(batch_ys[:, :-1]).to(self.device)
 
-				dec_output = model.forward(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
+				dec_output = model(enc_output=enc_output, trg_seq=trg_seq, src_mask=src_mask, trg_mask=trg_mask, module="decoder").to(self.embed_device)
 				pred_logits = (trg_word_prj(dec_output)*x_logit_scale)#.to(self.embed_device)
     			# pred_logits
 
@@ -143,15 +147,16 @@ class EditorNoRetrievalTrainerParallel:
 
 				loss.backward()
 				
-				torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
-				torch.nn.utils.clip_grad_norm_(list(trg_word_emb.parameters()) + list(src_word_emb.parameters()) + list(trg_word_prj.parameters()), 0.1)
+				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+				torch.nn.utils.clip_grad_norm_(list(trg_word_emb.parameters()) + list(src_word_emb.parameters()) + list(trg_word_prj.parameters()), 1.0)
 				optimizer.step()
 				optimizer_sparse.step()
 
-				if scheduler:
-					scheduler.step()
-
+				scheduler.step()
+				scheduler_sparse.step()
 				total_mle_loss += loss.item()
+				optimizer.zero_grad()
+				optimizer_sparse.zero_grad()				
 
 				non_pad_mask = trg_ys.ne(PAD_IDX)
 				n_word = non_pad_mask.sum().item()
@@ -162,7 +167,7 @@ class EditorNoRetrievalTrainerParallel:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
-					save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, suffix=str(batch_idx))
+					save_checkpoint(epoch, model, optimizer, optimizer_sparse, scheduler, scheduler_sparse, suffix=str(batch_idx))
 			
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
@@ -170,4 +175,4 @@ class EditorNoRetrievalTrainerParallel:
 			if tb is not None:
 				tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
 
-			self.validate_BLEU(model, validation_loader, epoch, tb)
+			self.validate_BLEU(model, src_word_emb, trg_word_emb, trg_word_prj, x_logit_scale, validation_loader, epoch, tb)

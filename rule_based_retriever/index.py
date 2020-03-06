@@ -6,6 +6,7 @@ import random
 import distance
 import collections
 import configargparse
+import pathlib
 from tqdm import tqdm
 
 from rule_based_retriever import opts
@@ -19,6 +20,7 @@ app = Flask(__name__)
 CORS(app)
 
 app.config['SECRET_KEY'] = 'fe093b0354f9ba0b1237a5e36f58caf55cc9f5682c2627b7463c30f0bbd97672'  # noqa
+opt = opts.get_params(p = str(pathlib.Path.cwd()  / 'github_data' / 'tensorflow-vgg'))
 
 
 # Regex
@@ -33,12 +35,6 @@ code_ptr = re.compile(r"([^a-zA-Z0-9])")
 whitespace_ptr = re.compile(r"(\s+)")
 
 
-# Read default options
-parser = configargparse.ArgumentParser(description="index.py")
-opts.system_opts(parser)
-opt = parser.parse_args()
-
-results = None
 
 
 ###############################################################################
@@ -59,8 +55,10 @@ def preprocess_source(source):
 
 
 def read_data(path):
+    print(path)
     if not os.path.exists(path):
         print("[!] Data does not exist")
+        print(path)
     elif os.path.isfile(path):
         return read_file(path)
     else:
@@ -716,7 +714,7 @@ def construct_dataset_edit(opt,
     return dataset_edit
 
 
-def generate_datasets(opt):
+def generate_datasets(opt, max_lines = 10000):
     """
     Check if processed datasets exist.
 
@@ -735,7 +733,7 @@ def generate_datasets(opt):
         sources, num_file = read_data(opt.path)
 
         dataset = construct_dataset(sources)  # D_proj = {(x, y)}
-        if len(dataset) > 10000:
+        if len(dataset) > max_lines:
             print(f"[generate_datasets] Skipping too large project (|dataset| = {len(dataset)})")
             dataset_edit = []
         else:
@@ -836,8 +834,6 @@ def main(opt):
     }
 
 
-# Execute main function with default options
-results = main(opt)
 
 
 ###############################################################################
@@ -926,5 +922,13 @@ def intro():
 
 
 if __name__ == "__main__":
+    # # Read default options
+    # parser = configargparse.ArgumentParser(description="index.py")
+    # opts.system_opts(parser)
+    # opt = parser.parse_args()
+
+    results = None
+    # Execute main function with default options
+    results = main(opt)
     app.run(host="0.0.0.0",  # Public
             debug=opt.debug)
