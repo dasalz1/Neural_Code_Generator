@@ -1,11 +1,13 @@
 from tensorboard_utils import Tensorboard
-from transformer.Models import Transformer
 from DataClass.torchData import *
-from DataClass.Constants import PAD_IDX
+from DataClass.Constants import PAD_IDX, END_IDX
 from DataClass.torchData import MAX_LINE_LENGTH
 from EditorNoRet import EditorNoRetrievalTrainer
 from torch.utils.data import ConcatDataset, DataLoader
+from transformer.bart import BartModel
+from transformer.configuration_bart import BartConfig
 import torch
+from random import shuffle
 from datetime import date
 import argparse, random
 import numpy as np
@@ -36,29 +38,43 @@ def main(args):
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
+	# shuffle(repo_files)
 
-	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]]),
+	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos+2:53]]),
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn,
-							num_workers=max(120, args.batch_size))
+							collate_fn=batch_collate_fn)#,
+							# num_workers=max(120, args.batch_size))
 
 	print("Finished creating data loader")
 
-	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]]),
+	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[46:num_validation_repos]]),
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn,
-							num_workers=max(120, args.batch_size))
+							collate_fn=batch_collate_fn)#,
+							# num_workers=max(120, args.batch_size))
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
 
-	model = Transformer(n_src_vocab=VOCAB_SIZE, n_trg_vocab=VOCAB_SIZE, src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
-						d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
-						n_head=args.num_heads, d_k=args.key_dimension, d_v=args.value_dimension, dropout=args.dropout,
-						n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
-						trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True)
+	model_config = BartConfig(
+		vocab_size=VOCAB_SIZE, pad_token_id=PAD_IDX,
+		eos_token_id=END_IDX, d_model=args.d_word_vec,
+		encoder_ffn_dim=args.inner_dimension,
+		encoder_layers=args.num_layers,
+		encoder_attention_heads=args.num_heads,
+		decoder_ffn_dim=args.inner_dimension,
+		decoder_layers=args.num_layers,
+		decoder_attention_heads=args.num_heads,
+		dropout=args.dropout,
+		max_encoder_position_embeddings=MAX_LINE_LENGTH,
+		max_decoder_position_embeddings=MAX_LINE_LENGTH)
+
+	model = BartModel(model_config)#Transformer(n_src_vocab=VOCAB_SIZE, n_trg_vocab=VOCAB_SIZE, src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
+						# d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
+						# n_head=args.num_heads, d_k=args.key_dimension, d_v=args.value_dimension, dropout=args.dropout,
+						# n_trg_position=MAX_LINE_LENGTH, n_src_position=MAX_LINE_LENGTH, 
+						# trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True)
 
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

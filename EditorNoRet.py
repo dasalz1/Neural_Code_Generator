@@ -11,6 +11,9 @@ from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from nltk.translate import bleu
 from transformers import AdamW, get_cosine_schedule_with_warmup
 
+
+from copy import deepcopy
+
 class EditorNoRetrievalTrainer:
 
 	def __init__(self, device):
@@ -50,11 +53,12 @@ class EditorNoRetrievalTrainer:
 		bleu_scores = []
 		accuracies = []
 		with torch.no_grad():
-			for batch in tqdm(validation_loader):
+			for idx, batch in enumerate(tqdm(validation_loader, mininterval=2, leave=False)):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
 
-				pred = model(batch_xs, batch_ys[:, :-1])
+				pred = model(input_ids=batch_xs, decoder_input_ids=batch_ys[:, :-1])
+
 				# pred_max = pred.max(1)[1]
 				pred_max = pred.max(2)[1]
 				pred = pd.DataFrame(pred_max.to('cpu').numpy())
@@ -85,14 +89,15 @@ class EditorNoRetrievalTrainer:
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
-			optimizer = AdamW(model.parameters(), lr=1e-1)
+			optimizer = AdamW(model.parameters(), lr=6e-4)
 			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=40000, num_training_steps=len(data_loader))
-			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)): 
+			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]
 		
-				pred_logits = model(batch_xs, batch_ys[:, :-1])
-				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
+				pred_logits = model(input_ids=batch_xs, decoder_input_ids=batch_ys[:, :-1])
+				# pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
+				pred_logits = pred_logits.reshape(-1, pred_logits.size(2))
 				loss, n_correct = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
 
 				loss.backward()
@@ -121,7 +126,7 @@ class EditorNoRetrievalTrainer:
 			if tb is not None:
 				tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
 
-			self.validate_BLEU(model, validation_loader, epoch, tb)
+			self.validate_BLEU(model, deepcopy(validation_loader), epoch, tb)
 
 
 # for batch_idx, batch in enumerate(tqdm(validation_loader, mininterval=2, leave=False)):

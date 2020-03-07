@@ -7,9 +7,9 @@ from DataClass.Constants import NO_CONTEXT_WORD, UNKNOWN_IDX
 
 warnings.simplefilter('ignore', pd.errors.ParserWarning)
 
-tokens_file = '../all_tokens.pickle'
+# tokens_file = '../all_tokens.pickle'
 # tokens_dict = pickle.load(open(tokens_file, 'rb'))
-word2idx, idx2word = create_vocab_dictionary(path='..', file='all_tokens.pickle', save=True)
+word2idx, idx2word = create_vocab_dictionary(path='.', file='all_tokens.pickle', save=True)
 
 # UNKNOWN_IDX = word2idx[UNKNOWN_WORD]
 MAX_LINE_LENGTH = 128
@@ -91,7 +91,7 @@ class RetrieveDataset(Dataset):
 
         context_tokens = preprocess_context(x, self.n_retrieved, self.max_dim)
 
-        y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, -1]), self.max_dim)
+        y_tokens = preprocess_tokens(tokenize_fine_grained(x[0, 1]), self.max_dim)
 
         context_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in context_tokens]
         y_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in y_tokens]

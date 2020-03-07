@@ -115,8 +115,8 @@ class EditorNoRetrievalTrainerParallel:
 			n_word_total = 0.0
 			n_word_correct = 0.0
 
-			optimizer = AdamW(list(model.parameters()) + list(trg_word_prj.parameters()), lr=1e-1)
-			optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=1e-1, betas=(0.9, 0.98), eps=1e-8)
+			optimizer = AdamW(list(model.parameters()) + list(trg_word_prj.parameters()), lr=6e-4)
+			optimizer_sparse = optim.SparseAdam(list(src_word_emb.parameters()) + list(trg_word_emb.parameters()), lr=1e-2, betas=(0.9, 0.98), eps=1e-8)
 			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=40000, num_training_steps=len(data_loader))
 			scheduler_sparse = get_cosine_schedule_with_warmup(optimizer_sparse, num_warmup_steps=40000, num_training_steps=len(data_loader), num_cycles=0.5, last_epoch=-1)
 

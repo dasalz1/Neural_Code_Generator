@@ -26,6 +26,8 @@ parser.add_argument("--meta_batch_size", default=4, type=int)
 parser.add_argument("--epochs", default=10, type=int)
 parser.add_argument("--num_updates", default=10, type=int)
 parser.add_argument("--k_shot", default=5, type=int)
+parser.add_argument("--query_batch_size", default=10, type=int)
+parser.add_argument("--total_forward", default=5, type=int)
 args = parser.parse_args()
 
 
@@ -42,7 +44,7 @@ def main(args):
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-	data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot), shuffle=True, batch_size=1)) for dataset in repo_files[num_validation_repos:102]]
+	data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)) for dataset in repo_files[num_validation_repos:102]]
 	validation_data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot), shuffle=True, batch_size=1)) for dataset in repo_files[98:num_validation_repos]]
 
 	if torch.cuda.is_available:
@@ -55,7 +57,7 @@ def main(args):
 					args.num_heads, args.key_dimension, args.value_dimension, args.dropout,
 					MAX_LINE_LENGTH, MAX_LINE_LENGTH, True, True)
 	
-	trainer = MetaTrainer(args.meta_batch_size, device='cpu', model_params=model_params)
+	trainer = MetaTrainer(args.meta_batch_size, device='cpu', model_params=model_params, total_forward=args.total_forward)
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
 if __name__=='__main__':

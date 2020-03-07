@@ -28,11 +28,11 @@ def preprocess_context(context, n, max_dim):
     context_tokens += [SEP_CONTEXT_WORD]
     
     for idx in range(n-1):
-        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2+1]), max_dim) + [SEP_PAIR_WORD]
-        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2+2]), max_dim) + [SEP_RET_WORD]
+        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2+2]), max_dim) + [SEP_PAIR_WORD]
+        context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, idx*2+3]), max_dim) + [SEP_RET_WORD]
     
-    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -3]), max_dim) + [SEP_PAIR_WORD]
-    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -2]), max_dim)
+    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -2]), max_dim) + [SEP_PAIR_WORD]
+    context_tokens += preprocess_tokens(tokenize_fine_grained(context[0, -1]), max_dim)
     return context_tokens
 
 def check_quote_str(line):
@@ -52,12 +52,16 @@ def fix_quote_strings(v):
 def fix_quote_strings_context(v, n):
     idx = v.find('","')
     x = check_quote_str(v[1:idx])
-    values = [x]
+
+    v = v[idx+3:]; idx = v.find('","')
+    y = check_quote_str(v[:idx])
+    values = [x, y]
     v = v[idx+3:]
-    for _ in range(n*2):
+    for _ in range(n*2 - 1):
         idx = v.find('","')
         values.append(check_quote_str(v[:idx]))
         v = v[idx+3:]
+
     values.append(check_quote_str(v[:-1]))
     return [values]
 
