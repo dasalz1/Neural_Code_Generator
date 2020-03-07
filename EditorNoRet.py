@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.optim import SparseAdam
 from DataClass.Constants import PAD_IDX, UNKNOWN_WORD
 from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_epoch, tb_mle_batch, tb_bleu_validation_epoch
 from tqdm import tqdm
@@ -89,8 +90,15 @@ class EditorNoRetrievalTrainer:
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
-			optimizer = AdamW(model.parameters(), lr=6e-4)
+
+			params = list(model.parameters())
+			embed_params = list(model.shared.parameters())
+			params.remove(embed_params[0])
+			optimizer = AdamW(params, lr=1e-2)
 			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=40000, num_training_steps=len(data_loader))
+
+			optimizer_sparse = SparseAdam(embed_params, lr=1e-2)
+			scheduler_sparse = get_cosine_schedule_with_warmup(optimizer_sparse, num_warmup_steps=40000, num_training_steps=len(data_loader))
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]
@@ -105,9 +113,12 @@ class EditorNoRetrievalTrainer:
 				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
 				optimizer.step()
+				optimizer_sparse.step()
 				scheduler.step()
+				scheduler_sparse.step()
 				total_mle_loss += loss.item()
 				optimizer.zero_grad()
+				optimizer_sparse.zero_grad()
 
 				non_pad_mask = trg_ys.ne(PAD_IDX)
 				n_word = non_pad_mask.sum().item()
@@ -118,7 +129,7 @@ class EditorNoRetrievalTrainer:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
-					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
+					save_checkpoint(epoch, model, optimizer, optimizer_sparse=optimizer_sparse, suffix=str(batch_idx))
 
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total

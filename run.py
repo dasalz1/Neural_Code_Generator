@@ -11,6 +11,8 @@ from random import shuffle
 from datetime import date
 import argparse, random
 import numpy as np
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--filepath", default='../repo_files', type=str)
@@ -25,6 +27,8 @@ parser.add_argument("--d_word_vec", default=512, type=int)
 parser.add_argument("--inner_dimension", default=2048, type=int)
 parser.add_argument("--batch_size", default=1024, type=int)
 parser.add_argument("--epochs", default=10, type=int)
+parser.add_argument("--use_retriever", default=False, action='store_true')
+parser.add_argument("--n_retrieved", default=2, type=int)
 args = parser.parse_args()
 
 def main(args):
@@ -35,24 +39,38 @@ def main(args):
 	VOCAB_SIZE = len(word2idx)
 	num_validation_repos = 50
 
+	if args.use_retriever: args.exp_name += ("retrieved_%d" % args.n_retrieved)
+
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 	# shuffle(repo_files)
 
-	data_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos+2:53]]),
+	if args.use_retriever:
+		datasets = ConcatDataset([RetrieverDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[num_validation_repos:53]])
+		validsets = ConcatDataset([RetrieverDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[46:num_validation_repos]])
+	else:
+		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:53]])
+		validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[46:num_validation_repos]])
+
+
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+	data_loader = DataLoader(datasets,
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn)#,
-							# num_workers=max(120, args.batch_size))
+							collate_fn=batch_collate_fn,
+							num_workers=64)
 
 	print("Finished creating data loader")
 
-	validation_loader = DataLoader(ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[46:num_validation_repos]]),
+
+
+	validation_loader = DataLoader(validsets,
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn)#,
-							# num_workers=max(120, args.batch_size))
+							collate_fn=batch_collate_fn,
+							num_workers=64)
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
@@ -77,7 +95,6 @@ def main(args):
 						# trg_emb_prj_weight_sharing=True, emb_src_trg_weight_sharing=True)
 
 	
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	if torch.cuda.is_available:
 		torch.backends.cudnn.deterministic=True

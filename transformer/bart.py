@@ -804,7 +804,7 @@ class BartModel(PretrainedBartModel):
         self.output_hidden_states = config.output_hidden_states
 
         padding_idx, vocab_size = config.pad_token_id, config.vocab_size
-        self.shared = nn.Embedding(vocab_size, config.d_model, padding_idx)
+        self.shared = nn.Embedding(vocab_size, config.d_model, padding_idx, sparse=True)
 
         self.encoder = BartEncoder(config, self.shared)
         self.decoder = BartDecoder(config, self.shared)
