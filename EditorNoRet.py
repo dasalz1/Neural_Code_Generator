@@ -83,7 +83,7 @@ class EditorNoRetrievalTrainer:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=10000):
+	def train(self, model, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=5000):
 		for epoch in range(epochs):
 			model.train()
 			total_mle_loss = 0.0
@@ -116,6 +116,13 @@ class EditorNoRetrievalTrainer:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
+					pred_max = pred_logits.reshape(-1, 127, len(idx2word)).max(2)[1]
+					pred = pd.DataFrame(pred_max.to('cpu').numpy())
+					pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+					trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
+					trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+					print(pred_words[0])
+					print(trg_words[0])
 					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
 
 			loss_per_word = total_mle_loss / n_word_total

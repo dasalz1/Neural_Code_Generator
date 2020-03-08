@@ -59,8 +59,8 @@ def main(args):
 	data_loader = DataLoader(datasets,
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn,
-							num_workers=92)
+							collate_fn=batch_collate_fn)#,
+							# num_workers=92)
 
 	print("Finished creating data loader")
 
@@ -69,8 +69,8 @@ def main(args):
 	validation_loader = DataLoader(validsets,
 							batch_size=args.batch_size,
 							shuffle=True,
-							collate_fn=batch_collate_fn,
-							num_workers=92)
+							collate_fn=batch_collate_fn)#,
+							# num_workers=92)
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
