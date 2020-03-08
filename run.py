@@ -56,7 +56,7 @@ def main(args):
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-	data_loader = DataLoader(datasets,
+	data_loader = DataLoader(RetrieverDataset(args.filepath +'/'+repo_files[600], args.n_retrieved)#datasets,
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,

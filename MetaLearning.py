@@ -7,6 +7,7 @@ from torch import optim
 from torch import autograd
 from torch.multiprocessing import Process, Queue
 from multiprocessing import Event
+from transformer.bart import BartModel
 from DataClass.Constants import PAD_IDX
 import numpy as np
 import pandas as pd
@@ -20,7 +21,7 @@ class Learner(nn.Module):
 	def __init__(self, process_id, gpu='cpu', world_size=4, total_forward = 5, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3, (0.9, 0.995), 1e-8), model_params=None):
 		super(Learner, self).__init__()
 
-		self.model = Transformer(*model_params)
+		self.model = BartModel(*model_params)
 
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
@@ -32,7 +33,7 @@ class Learner(nn.Module):
 		self.process_id = process_id
 		self.num_iter = 0
 		self.world_size = world_size
-		self.total_forward = 5
+		self.total_forward = total_forward
 		self.original_state_dict = {}
 
 		# if process == 0:

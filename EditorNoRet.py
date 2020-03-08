@@ -92,7 +92,6 @@ class EditorNoRetrievalTrainer:
 			optimizer = AdamW(model.parameters(), lr=1e-2)
 			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=40000, num_training_steps=len(data_loader))
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
-				print("data")
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]
 		
@@ -100,7 +99,6 @@ class EditorNoRetrievalTrainer:
 				# pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				pred_logits = pred_logits.reshape(-1, pred_logits.size(2))
 				loss, n_correct = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
-
 				loss.backward()
 				
 				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -114,7 +112,6 @@ class EditorNoRetrievalTrainer:
 				n_word = non_pad_mask.sum().item()
 				n_word_total += n_word
 				n_word_correct += n_correct
-				print(" grad")
 				if tb is not None and batch_idx % log_interval == 0:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
 

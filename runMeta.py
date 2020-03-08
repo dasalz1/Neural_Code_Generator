@@ -2,6 +2,7 @@ from tensorboard_utils import Tensorboard
 from MetaLearning import MetaTrainer
 import argparse, random
 from DataClass.torchData import *
+from transformer.configuration_bart import BartConfig
 from DataClass.Constants import PAD_IDX
 from DataClass.torchData import MAX_LINE_LENGTH
 import numpy as np
@@ -40,7 +41,7 @@ def main(args):
 	torch.manual_seed(12324)
 
 	VOCAB_SIZE = len(word2idx)
-	num_validation_repos = 100
+	num_validation_repos = 50
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
@@ -52,10 +53,22 @@ def main(args):
 		torch.backends.cudnn.benchmark = False
 
 
-	model_params = (VOCAB_SIZE, VOCAB_SIZE, PAD_IDX, PAD_IDX, 
-					args.d_word_vec, args.d_word_vec, args.inner_dimension, args.num_layers,
-					args.num_heads, args.key_dimension, args.value_dimension, args.dropout,
-					MAX_LINE_LENGTH, MAX_LINE_LENGTH, True, True)
+	# model_params = (VOCAB_SIZE, VOCAB_SIZE, PAD_IDX, PAD_IDX, 
+	# 				args.d_word_vec, args.d_word_vec, args.inner_dimension, args.num_layers,
+	# 				args.num_heads, args.key_dimension, args.value_dimension, args.dropout,
+	# 				MAX_LINE_LENGTH, MAX_LINE_LENGTH, True, True)
+
+	model_params = BartConfig(vocab_size=VOCAB_SIZE, pad_token_id=PAD_IDX,
+								eos_token_id=END_IDX, d_model=args.d_word_vec,
+								encoder_ffn_dim=args.inner_dimension,
+								encoder_layers=args.num_layers,
+								encoder_attention_heads=args.num_heads,
+								decoder_ffn_dim=args.inner_dimension,
+								decoder_layers=args.num_layers,
+								decoder_attention_heads=args.num_heads,
+								dropout=args.dropout,
+								max_encoder_position_embeddings=MAX_LINE_LENGTH,
+								max_decoder_position_embeddings=MAX_LINE_LENGTH)
 	
 	trainer = MetaTrainer(args.meta_batch_size, device='cpu', model_params=model_params, total_forward=args.total_forward)
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
