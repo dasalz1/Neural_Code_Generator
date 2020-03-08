@@ -50,17 +50,17 @@ def main(args):
 		datasets = ConcatDataset([RetrieverDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[num_validation_repos:53]])
 		validsets = ConcatDataset([RetrieverDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[46:num_validation_repos]])
 	else:
-		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:53]])
-		validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[46:num_validation_repos]])
+		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]])
+		validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]])
 
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-	data_loader = DataLoader(RetrieverDataset(args.filepath +'/'+repo_files[600], args.n_retrieved)#datasets,
+	data_loader = DataLoader(datasets,
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=64)
+							num_workers=92)
 
 	print("Finished creating data loader")
 
@@ -70,7 +70,7 @@ def main(args):
 							batch_size=args.batch_size,
 							shuffle=True,
 							collate_fn=batch_collate_fn,
-							num_workers=64)
+							num_workers=92)
 
 	print("Finished creating validation data loader")
 	num_iterations = len(data_loader)
