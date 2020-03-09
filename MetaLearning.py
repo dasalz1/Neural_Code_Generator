@@ -149,7 +149,7 @@ class Learner(nn.Module):
 			non_pad_mask = query_y[: 1:].ne(PAD_IDX)
 			n_word = non_pad_mask.sum().item()
 
-			acc = torch.FloatTensor([n_correct / n_word])
+			acc = torch.FloatTensor([n_correct / n_word]).to(self.device)
 
 			# loss, pred = self.model(query_x, query_y)
 			all_grads = autograd.grad(loss, self.model.parameters())
