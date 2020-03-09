@@ -194,7 +194,7 @@ class MetaTrainer:
 		# so doesn't hang on first iteration
 		process_event.set()
 		num_tasks = len(data_loaders)
-		
+		print(num_tasks)
 		processes = []
 		for process_id in range(self.world_size):
 			processes.append(Process(target=self.init_process, 
