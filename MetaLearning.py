@@ -18,7 +18,7 @@ from copy import deepcopy
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, total_forward = 5, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3, (0.9, 0.995), 1e-8), model_params=None):
+	def __init__(self, process_id, gpu='cpu', world_size=4, total_forward=5, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3, (0.9, 0.995), 1e-8), model_params=None):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(*model_params)
@@ -154,24 +154,21 @@ class Learner(nn.Module):
 
 			for idx in range(len(all_grads)):
 				dist.reduce(all_grads[idx].data, 0, op=dist.ReduceOp.SUM, async_op=True)
+				all_grads[idx] = (all_grads[idx] / self.world_size)
 
 			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0:
 				tb_mle_meta_batch(tb, loss.item()/self.world_size, acc/self.world_size, self.num_iter)
 
 			if self.process_id == 0:
-				print("at top of grad part")
-				print(all_grads[0])
-				if temp_grads is not None:
-					print(temp_grads[0])
-
 				if self.forward_passes == 0:
 					# temp_cop
 					temp_grads = list(deepcopy(all_grads))
 				else:
 					for i in range(len(temp_grads)):
 						temp_grads[i] += all_grads[i]
+						if self.forward_passes == self.total_forward:
+							temp_grads[i] /= self.total_forward
 
-				print(temp_grads[0])
 
 				self.num_iter += 1
 				self.forward_passes += 1
@@ -191,14 +188,13 @@ class MetaTrainer:
 
 		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, total_forward=total_forward, model_params=model_params) for process_id in range(world_size)]
 		# gpu backend instead of gloo
-		self.backend = "gloo"#"nccl"
+		self.backend = "nccl"
 		
 	def init_process(self, process_id, data_queue, data_event, process_event, num_updates, tb, address='localhost', port='29500'):
 		os.environ['MASTER_ADDR'] = address
 		os.environ['MASTER_PORT'] = port
 		dist.init_process_group(self.backend, rank=process_id, world_size=self.world_size)
 		self.meta_learners[process_id](num_updates, data_queue, data_event, process_event, tb)
-
 
 	# dataloaders is list of the iterators of the dataloaders for each task
 	def train(self, data_loaders, tb=None, num_updates = 5, num_iters=250000):
@@ -225,15 +221,12 @@ class MetaTrainer:
 			tasks = np.random.randint(0, num_tasks, (self.world_size))
 			for task in tasks:
 				# place holder for sampling data from dataset
-				hey = next(data_loaders[task])
+				task_data = next(data_loaders[task])
 
 				# print(hey[0].shape)
-				data_queue.put((hey[0].numpy()[0], hey[1].numpy()[0], 
-								hey[2].numpy()[0], hey[3].numpy()[0]))
-				# data_queue.put(hey[0][0].numpy())
-				# data_queue2.put(hey[1][0].numpy())
-				# data_queue3.put(hey[2][0].numpy())
-				# data_queue4.put(hey[3][0].numpy())
+				data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
+								task_data[2].numpy()[0], task_data[3].numpy()[0]))
+				
 			data_event.set()
 
 		new_model = self.meta_learners[0].model.original_state_dict
