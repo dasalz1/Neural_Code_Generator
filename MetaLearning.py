@@ -23,6 +23,7 @@ class Learner(nn.Module):
 
 		self.model = BartModel(model_params)
 
+
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
@@ -30,6 +31,7 @@ class Learner(nn.Module):
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
+		self.model.to(self.device)
 		self.process_id = process_id
 		self.num_iter = 0
 		self.world_size = world_size
