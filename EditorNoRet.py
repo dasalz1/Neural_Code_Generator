@@ -122,8 +122,14 @@ class EditorNoRetrievalTrainer:
 					pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
 					trg_ys = pd.DataFrame(batch_ys[:, 1:].to('cpu').numpy())
 					trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
-					print(pred_words[0])
-					print(trg_words[0])
+					with open('output_tests.txt', 'a') as f:
+						f.write("On the iteration %d" % batch_idx)
+						f.write("The actual line:\n")
+						f.write(trg_words[0])
+						f.write("The prediciton of the line:\n")
+						f.write(pred_words[0])
+						f.write('\n\n\n\n\n')
+						
 					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
 
 			loss_per_word = total_mle_loss / n_word_total
