@@ -25,10 +25,12 @@ parser.add_argument("--value_dimension", default=64, type=int)
 parser.add_argument("--dropout", default=0.1, type=float)
 parser.add_argument("--d_word_vec", default=512, type=int)
 parser.add_argument("--inner_dimension", default=2048, type=int)
-parser.add_argument("--batch_size", default=1024, type=int)
+parser.add_argument("--batch_size", default=24, type=int)
 parser.add_argument("--epochs", default=10, type=int)
 parser.add_argument("--use_retriever", default=False, action='store_true')
 parser.add_argument("--n_retrieved", default=2, type=int)
+parser.add_argument("--n_src_length", default=MAX_LINE_LENGTH, type=int)
+parser.add_argument("--n_trg_length", default=MAX_LINE_LENGTH, type=int)
 args = parser.parse_args()
 
 def main(args):
@@ -39,6 +41,9 @@ def main(args):
 	VOCAB_SIZE = len(word2idx)
 	num_validation_repos = 50
 
+	if args.use_retriever:
+		args.n_src_length = (2*args.n_retrieved-1)+(args.n_src_length)*(args.n_retrieved*2)+1+args.n_retrieved
+
 	if args.use_retriever: args.exp_name += ("retrieved_%d" % args.n_retrieved)
 
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
@@ -47,8 +52,8 @@ def main(args):
 	# shuffle(repo_files)
 
 	if args.use_retriever:
-		datasets = ConcatDataset([RetrieverDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[num_validation_repos:53]])
-		validsets = ConcatDataset([RetrieverDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[46:num_validation_repos]])
+		datasets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[num_validation_repos:]])
+		validsets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[:num_validation_repos]])
 	else:
 		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]])
 		validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]])
@@ -85,8 +90,8 @@ def main(args):
 		decoder_layers=args.num_layers,
 		decoder_attention_heads=args.num_heads,
 		dropout=args.dropout,
-		max_encoder_position_embeddings=MAX_LINE_LENGTH,
-		max_decoder_position_embeddings=MAX_LINE_LENGTH)
+		max_encoder_position_embeddings=args.n_src_length,
+		max_decoder_position_embeddings=args.n_trg_length)
 
 	model = BartModel(model_config)#Transformer(n_src_vocab=VOCAB_SIZE, n_trg_vocab=VOCAB_SIZE, src_pad_idx=PAD_IDX, trg_pad_idx=PAD_IDX, 
 						# d_word_vec=args.d_word_vec, d_model=args.d_word_vec, d_inner=args.inner_dimension, n_layers=args.num_layers,
