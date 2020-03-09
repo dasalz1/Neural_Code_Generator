@@ -95,7 +95,7 @@ class Learner(nn.Module):
 		# dummy_loss, _ = self.model(temp_data)
 		hooks = self._hook_grads(all_grads)
 		dummy_loss.backward()
-		print("did backward loss")
+		# print("did backward loss")
 		torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 		
 		self.optimizer.step()
@@ -177,10 +177,10 @@ class Learner(nn.Module):
 				if self.forward_passes == self.total_forward:
 					self.forward_passes = 0
 					self._write_grads(temp_grads, (query_x, query_y))
-					print("finished emtamaffdhd")
+					# print("finished emtamaffdhd")
 				else:
 					self.model.load_state_dict(self.original_state_dict)
-					print("doing forward pass")
+					# print("doing forward pass")
 					# self.model.to(self.device)
 				# finished batch so can load data again from master
 				process_event.set()
