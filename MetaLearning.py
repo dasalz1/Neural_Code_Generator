@@ -122,10 +122,10 @@ class Learner(nn.Module):
 
 			# broadcast weights from master process to all others and save them to a detached dictionary for loadinglater
 			for k, v in self.model.state_dict().items():
-				if self.process_id == 0:
-					v.to(self.device)
-					if self.forward_passes == 0: self.original_state_dict[k] = v.clone().detach()
-				
+				if self.process_id == 0 and self.forward_passes == 0:
+					self.original_state_dict[k] = v.clone().detach()
+				v.to(self.device)
+
 				dist.broadcast(v, src=0, async_op=True)
 
 			self.model.to(self.device)
@@ -181,7 +181,7 @@ class Learner(nn.Module):
 					self._write_grads(self.original_state_dict, temp_grads, (query_x, query_y))
 				else:
 					self.model.load_state_dict(self.original_state_dict)
-					# self.model.to(self.device)
+					self.model.to(self.device)
 				# finished batch so can load data again from master
 				process_event.set()
 
