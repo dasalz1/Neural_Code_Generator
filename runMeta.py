@@ -32,7 +32,7 @@ parser.add_argument("--query_batch_size", default=10, type=int)
 parser.add_argument("--total_forward", default=5, type=int)
 args = parser.parse_args()
 
-set_start_method('spawn', Force=True)
+set_start_method('spawn', force=True)
 
 def main(args):
 	random.seed(12324)

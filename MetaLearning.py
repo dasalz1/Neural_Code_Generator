@@ -90,7 +90,7 @@ class Learner(nn.Module):
 		self.optimizer.zero_grad()
 
 		dummy_query_x, dummy_query_y = temp_data
-		pred_logits = self.model(dummy_query_x, dummy_query_y[:, :-1])
+		pred_logits = self.model(input_ids=dummy_query_x, decoder_input_ids=dummy_query_y[:, :-1])
 		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 		dummy_loss, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
 
@@ -125,7 +125,7 @@ class Learner(nn.Module):
 			for k, v in self.model.state_dict().items():
 				if self.process_id == 0 and self.forward_passes == 0:
 					self.original_state_dict[k] = v.clone().detach()
-				v.to(self.device)
+				# v.to(self.device)
 
 				dist.broadcast(v, src=0, async_op=False)
 
@@ -136,14 +136,14 @@ class Learner(nn.Module):
 			support_x, support_y, query_x, query_y = map(lambda x: torch.LongTensor(x).to(self.device), data)
 			for i in range(num_updates):
 				self.meta_optimizer.zero_grad()
-				pred_logits = self.model(support_x, support_y[:, :-1])
+				pred_logits = self.model(input_ids=support_x, decoder_input_ids=support_y[:, :-1])
 				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				loss, n_correct = self.compute_mle_loss(pred_logits, support_y[:, 1:], smoothing=True)
 				loss.backward()
 				torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 				self.meta_optimizer.step()
 
-			pred_logits = self.model(query_x, query_y[:, :-1])
+			pred_logits = self.model(input_ids=query_x, decoder_input_ids=query_y[:, :-1])
 			pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 			loss, n_correct = self.compute_mle_loss(pred_logits, query_y[:, 1:], smoothing=True)
 
@@ -182,7 +182,7 @@ class Learner(nn.Module):
 					self._write_grads(self.original_state_dict, temp_grads, (query_x, query_y))
 				else:
 					self.model.load_state_dict(self.original_state_dict)
-					self.model.to(self.device)
+					# self.model.to(self.device)
 				# finished batch so can load data again from master
 				process_event.set()
 
