@@ -159,7 +159,7 @@ class Learner(nn.Module):
 
 			for idx in range(len(all_grads)):
 				dist.reduce(all_grads[idx].data, 0, op=dist.ReduceOp.SUM, async_op=True)
-				all_grads[idx] = (all_grads[idx] / self.world_size)
+				all_grads[idx].data = (all_grads[idx].data / self.world_size)
 
 			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0:
 				tb_mle_meta_batch(tb, loss.item()/self.world_size, acc/self.world_size, self.num_iter)
@@ -172,7 +172,7 @@ class Learner(nn.Module):
 					for i in range(len(temp_grads)):
 						temp_grads[i] += all_grads[i]
 						if self.forward_passes == self.total_forward:
-							temp_grads[i] /= self.total_forward
+							temp_grads[i].data = temp_grads[i].data/self.total_forward
 
 
 				self.num_iter += 1
