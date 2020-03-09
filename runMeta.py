@@ -3,7 +3,7 @@ from MetaLearning import MetaTrainer
 import argparse, random
 from DataClass.torchData import *
 from transformer.configuration_bart import BartConfig
-from DataClass.Constants import PAD_IDX
+from DataClass.Constants import PAD_IDX, END_IDX
 from DataClass.torchData import MAX_LINE_LENGTH
 import numpy as np
 import torch
@@ -30,10 +30,6 @@ parser.add_argument("--k_shot", default=5, type=int)
 parser.add_argument("--query_batch_size", default=10, type=int)
 parser.add_argument("--total_forward", default=5, type=int)
 args = parser.parse_args()
-
-
-ds = MetaRepo('repo_files/beaker_line_pairs.csv', False)
-d = DataLoader(ds, shuffle=True)
 
 def main(args):
 	random.seed(12324)

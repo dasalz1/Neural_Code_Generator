@@ -21,7 +21,7 @@ class Learner(nn.Module):
 	def __init__(self, process_id, gpu='cpu', world_size=4, total_forward=5, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3, (0.9, 0.995), 1e-8), model_params=None):
 		super(Learner, self).__init__()
 
-		self.model = BartModel(*model_params)
+		self.model = BartModel(model_params)
 
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
@@ -112,7 +112,7 @@ class Learner(nn.Module):
 		while(True):
 			data_event.wait()
 			data = data_queue.get()
-			dist.barrier()
+			# dist.barrier()
 			data_event.clear()
 
 			if self.process_id == 0 and self.num_iter != 0 and self.num_iter % checkpoint_interval == 0:
@@ -122,9 +122,10 @@ class Learner(nn.Module):
 			for k, v in self.model.state_dict().items():
 				if self.process_id == 0 and self.forward_passes == 0:
 					self.original_state_dict[k] = v.clone().detach()
+				# print(v)
 				dist.broadcast(v, src=0, async_op=True)
 
-			self.model.to(self.device)
+			# self.model.to(self.device)
 			self.model.train()
 
 			# meta gradients
@@ -177,6 +178,7 @@ class Learner(nn.Module):
 					self._write_grads(self.original_state_dict, temp_grads, (query_x, query_y))
 				else:
 					self.model.load_state_dict(self.original_state_dict)
+					self.model.to(self.device)
 				# finished batch so can load data again from master
 				process_event.set()
 
