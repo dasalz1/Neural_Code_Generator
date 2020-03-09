@@ -3,12 +3,13 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from transformer.Models import Transformer
 from torch import nn
+from DataClass.MetaTorchData import *
 from torch import optim
 from torch import autograd
 from torch.multiprocessing import Process, Queue
 from multiprocessing import Event
 from transformer.bart import BartModel
-from DataClass.Constants import PAD_IDX
+from DataClass.Constants import PAD_IDX, UNKNOWN_WORD
 import numpy as np
 import pandas as pd
 from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_meta_batch
@@ -67,7 +68,8 @@ class Learner(nn.Module):
 		non_pad_mask = target.ne(PAD_IDX)
 		n_correct = pred_max.eq(target)
 		n_correct = n_correct.masked_select(non_pad_mask).sum().item()
-		return loss, n_correct
+		n_total = non_pad_mask.sum().item()
+		return loss, n_correct, n_total
 
 	def _hook_grads(self, all_grads):
 		hooks = []
@@ -89,7 +91,7 @@ class Learner(nn.Module):
 		print(" ")
 		pred_logits = self.model(input_ids=dummy_query_x, decoder_input_ids=dummy_query_y[:, :-1])
 		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
-		dummy_loss, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
+		dummy_loss, _, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
 		print(" ")
 		# dummy_loss, _ = self.model(temp_data)
 		hooks = self._hook_grads(all_grads)
@@ -137,31 +139,25 @@ class Learner(nn.Module):
 				self.meta_optimizer.zero_grad()
 				pred_logits = self.model(input_ids=support_x, decoder_input_ids=support_y[:, :-1])
 				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
-				loss, n_correct = self.compute_mle_loss(pred_logits, support_y[:, 1:], smoothing=True)
+				loss, n_correct, _ = self.compute_mle_loss(pred_logits, support_y[:, 1:], smoothing=True)
 				loss.backward()
 				torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 				self.meta_optimizer.step()
 
 			pred_logits = self.model(input_ids=query_x, decoder_input_ids=query_y[:, :-1])
 			pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
-			loss, n_correct = self.compute_mle_loss(pred_logits, query_y[:, 1:], smoothing=True)
+			loss, n_correct, n_total = self.compute_mle_loss(pred_logits, query_y[:, 1:], smoothing=True)
 
-			non_pad_mask = query_y[: 1:].ne(PAD_IDX)
-			n_word = non_pad_mask.sum().item()
-			
-			print("Ncorrect %d and n word %d" % (n_correct, n_word))
-
-			n_word_total += n_word
+			n_word_total += n_total
 			n_word_correct += n_correct
 			total_loss += loss.item()
-			# acc = torch.FloatTensor([n_correct / n_word]).to(self.device)
+			
 
 			# loss, pred = self.model(query_x, query_y)
 			all_grads = autograd.grad(loss, self.model.parameters())
-			# dist.reduce(loss/n_word, 0, op=dist.ReduceOp.SUM, async_op=True)
-			# dist.reduce(acc, 0, op=dist.ReduceOp.SUM)
-			# accs.append(n_correct / n_word)
-			# losses.append(loss.item()/n_word)
+			
+			if self.process_id == 0:
+				
 
 			for idx in range(len(all_grads)):
 				dist.reduce(all_grads[idx].data, 0, op=dist.ReduceOp.SUM, async_op=True)
@@ -170,6 +166,25 @@ class Learner(nn.Module):
 			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0:
 				tb_mle_meta_batch(tb, total_loss/n_word_total, n_word_correct/n_word_total, self.num_iter)
 				n_word_total = 0.0; n_word_correct = 0.0; total_loss = 0.0
+
+				support_x_pred = pd.DataFrame(support_x[:, 1:].to('cpu').numpy())
+				support_x_pred = np.where(support_x_pred.isin(idx2word.keys()), support_x_pred.replace(idx2word), UNKNOWN_WORD)
+				pred_max = pred_logits.reshape(-1, 127, len(idx2word)).max(2)[1]
+				pred = pd.DataFrame(pred_max.to('cpu').numpy())
+				pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+				trg_ys = pd.DataFrame(query_y[:, 1:].to('cpu').numpy())
+				trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+				with open('meta-predictions.txt', 'a') as f:
+					f.write("On iteration %d" % self.num_iter)
+					f.write("The support here\n")
+					f.write(support_x_pred)
+					f.write("\n")
+					f.write("One of the queries\n")
+					f.write(trg_words[0])
+					f.write("\n")
+					f.write("one of the predictions\n")
+					f.write(pred_words[0])
+					f.write("\n\n\n\n\n")
 
 			if self.process_id == 0:
 				self.num_iter += 1

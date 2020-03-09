@@ -45,7 +45,8 @@ class EditorNoRetrievalTrainer:
 		non_pad_mask = target.ne(PAD_IDX)
 		n_correct = pred_max.eq(target)
 		n_correct = n_correct.masked_select(non_pad_mask).sum().item()
-		return loss, n_correct
+		n_total = non_pad_mask.sum().item()
+		return loss, n_correct, n_total
 	
 	def validate_BLEU(self, model, validation_loader, epoch, tb=None):
 		model.eval()
@@ -98,7 +99,7 @@ class EditorNoRetrievalTrainer:
 				pred_logits = model(input_ids=batch_xs, decoder_input_ids=batch_ys[:, :-1])
 				# pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				pred_logits = pred_logits.reshape(-1, pred_logits.size(2))
-				loss, n_correct = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
+				loss, n_correct, n_total = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
 				loss.backward()
 				
 				torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -108,9 +109,9 @@ class EditorNoRetrievalTrainer:
 				total_mle_loss += loss.item()
 				optimizer.zero_grad()
 
-				non_pad_mask = trg_ys.ne(PAD_IDX)
-				n_word = non_pad_mask.sum().item()
-				n_word_total += n_word
+				# non_pad_mask = trg_ys.ne(PAD_IDX)
+				# n_word = non_pad_mask.sum().item()
+				n_word_total += n_total
 				n_word_correct += n_correct
 				if tb is not None and batch_idx % log_interval == 0:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))

@@ -82,5 +82,5 @@ def main(args):
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
 if __name__=='__main__':
-	set_start_method('spawn', force=False)
+	# set_start_method('spawn', force=sFalse)
 	main(args)
