@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from DataClass.MetaTorchData import MetaRepo, MetaRetrieved
+from torch.multiprocessing import set_start_method
 from datetime import date
 
 
@@ -30,6 +31,8 @@ parser.add_argument("--k_shot", default=5, type=int)
 parser.add_argument("--query_batch_size", default=10, type=int)
 parser.add_argument("--total_forward", default=5, type=int)
 args = parser.parse_args()
+
+set_start_method('spawn', Force=True)
 
 def main(args):
 	random.seed(12324)
@@ -67,7 +70,7 @@ def main(args):
 								max_decoder_position_embeddings=MAX_LINE_LENGTH)
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-	
+
 	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params, total_forward=args.total_forward)
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
