@@ -105,8 +105,10 @@ class Learner(nn.Module):
 
 		print("finished meta")
 
-	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=10, checkpoint_interval=10000):
-		accs = []; losses = []
+	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=50, checkpoint_interval=10000):
+		n_word_total = 0.0
+		n_word_correct = 0.0
+		total_loss = 0.0
 		while(True):
 			data_event.wait()
 			data = data_queue.get()
@@ -146,24 +148,26 @@ class Learner(nn.Module):
 
 			non_pad_mask = query_y[: 1:].ne(PAD_IDX)
 			n_word = non_pad_mask.sum().item()
-
+			
+			n_word_total += n_word
+			n_word_correct += n_correct
+			total_loss += loss.item()
 			# acc = torch.FloatTensor([n_correct / n_word]).to(self.device)
 
 			# loss, pred = self.model(query_x, query_y)
 			all_grads = autograd.grad(loss, self.model.parameters())
 			# dist.reduce(loss/n_word, 0, op=dist.ReduceOp.SUM, async_op=True)
 			# dist.reduce(acc, 0, op=dist.ReduceOp.SUM)
-			accs.append(n_correct / n_word)
-			losses.append(loss.item()/n_word)
-
+			# accs.append(n_correct / n_word)
+			# losses.append(loss.item()/n_word)
 
 			for idx in range(len(all_grads)):
 				dist.reduce(all_grads[idx].data, 0, op=dist.ReduceOp.SUM, async_op=True)
 				all_grads[idx].data = all_grads[idx].data / self.world_size
 
 			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0:
-				tb_mle_meta_batch(tb, np.mean(losses), np.mean(accs), self.num_iter)
-				losses = []; accs = []
+				tb_mle_meta_batch(tb, total_loss/n_word_total, n_word_correct/n_word_total, self.num_iter)
+				n_word_total = 0.0; n_word_correct = 0.0; total_loss = 0.0
 
 			if self.process_id == 0:
 				self.num_iter += 1
