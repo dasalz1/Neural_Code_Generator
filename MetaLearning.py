@@ -149,6 +149,8 @@ class Learner(nn.Module):
 			non_pad_mask = query_y[: 1:].ne(PAD_IDX)
 			n_word = non_pad_mask.sum().item()
 			
+			print("Ncorrect %d and n word %d" % (n_correct, n_word))
+
 			n_word_total += n_word
 			n_word_correct += n_correct
 			total_loss += loss.item()
@@ -182,7 +184,7 @@ class MetaTrainer:
 
 		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params) for process_id in range(world_size)]
 		# gpu backend instead of gloo
-		self.backend = "nccl"
+		self.backend = "gloo"#"nccl"
 		
 	def init_process(self, process_id, data_queue, data_event, process_event, num_updates, tb, address='localhost', port='29500'):
 		os.environ['MASTER_ADDR'] = address
