@@ -45,8 +45,8 @@ def main(args):
 	print(len(repo_files))
 	data_loaders = []; validation_loaders = []
 	for dataset in repo_files[num_validation_repos:]:
-		temp = DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)
-		if len(temp) > 0: data_loaders.append(temp)
+		temp = MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size)
+		if len(temp) > 0: data_loaders.append(DataLoader(temp, shuffle=True, batch_size=1))
 	for dataset in repo_files[:num_validation_repos]:
 		temp = DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)
 		if len(temp) > 0: validation_loaders.append(temp)
