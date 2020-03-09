@@ -69,7 +69,7 @@ def main(args):
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params, total_forward=args.total_forward)
+	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params)#, total_forward=args.total_forward)
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
 if __name__=='__main__':

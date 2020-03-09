@@ -190,10 +190,10 @@ class Learner(nn.Module):
 
 class MetaTrainer:
 
-	def __init__(self, world_size, device='cpu', model_params=None, total_forward=5):
+	def __init__(self, world_size, device='cpu', model_params=None):
 		self.world_size = world_size
 
-		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, total_forward=total_forward, model_params=model_params) for process_id in range(world_size)]
+		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params) for process_id in range(world_size)]
 		# gpu backend instead of gloo
 		self.backend = "nccl"
 		
