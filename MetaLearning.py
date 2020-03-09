@@ -124,7 +124,7 @@ class Learner(nn.Module):
 			for k, v in self.model.state_dict().items():
 				if self.process_id == 0 and self.forward_passes == 0:
 					self.original_state_dict[k] = v.clone().detach()
-				v.to(self.device)
+				# v.to(self.device)
 
 				dist.broadcast(v, src=0, async_op=True)
 

@@ -66,7 +66,9 @@ def main(args):
 								max_encoder_position_embeddings=MAX_LINE_LENGTH,
 								max_decoder_position_embeddings=MAX_LINE_LENGTH)
 	
-	trainer = MetaTrainer(args.meta_batch_size, device='cpu', model_params=model_params, total_forward=args.total_forward)
+	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	
+	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params, total_forward=args.total_forward)
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
 if __name__=='__main__':
