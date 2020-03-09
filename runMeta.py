@@ -14,7 +14,7 @@ from datetime import date
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--filepath", default='./repo_files', type=str)
+parser.add_argument("--filepath", default='../repo_files', type=str)
 parser.add_argument("--exp_name", default='EditorPairTrain', type=str)
 parser.add_argument("--unique_id", default=str(date.today()), type=str)
 parser.add_argument("--num_layers", default=6, type=int)
@@ -43,8 +43,16 @@ def main(args):
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
 	print(len(repo_files))
-	data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)) for dataset in repo_files[num_validation_repos:102]]
-	validation_data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot), shuffle=True, batch_size=1)) for dataset in repo_files[98:num_validation_repos]]
+	data_loaders = []; validation_loaders = []
+	for dataset in repo_files[num_validation_repos:]:
+		temp = DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)
+		if len(temp) > 0: data_loaders.append(temp)
+	for dataset in repo_files[:num_validation_repos]:
+		temp = DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)
+		if len(temp) > 0: validation_loaders.append(temp)
+	# data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)) 
+	# data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)) for dataset in repo_files[num_validation_repos:102]]
+	# validation_data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot), shuffle=True, batch_size=1)) for dataset in repo_files[98:num_validation_repos]]
 
 	if torch.cuda.is_available:
 		torch.backends.cudnn.deterministic=True
