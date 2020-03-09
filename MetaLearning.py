@@ -119,7 +119,6 @@ class Learner(nn.Module):
 
 			if self.process_id == 0 and self.num_iter != 0 and self.num_iter % checkpoint_interval == 0:
 				save_checkpoint(0, self.model, self.optimizer, suffix=str(self.num_iter))
-
 			
 			# broadcast weights from master process to all others and save them to a detached dictionary for loadinglater
 			for k, v in self.model.state_dict().items():
@@ -153,7 +152,7 @@ class Learner(nn.Module):
 
 			# loss, pred = self.model(query_x, query_y)
 			all_grads = autograd.grad(loss, self.model.parameters())
-			dist.reduce(loss, 0, op=dist.ReduceOp.SUM, async_op=True)
+			dist.reduce(loss/n_word, 0, op=dist.ReduceOp.SUM, async_op=True)
 			dist.reduce(acc, 0, op=dist.ReduceOp.SUM)
 
 			for idx in range(len(all_grads)):
