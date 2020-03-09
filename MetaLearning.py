@@ -222,6 +222,7 @@ class MetaTrainer:
 			processes[-1].start()
 
 		for num_iter in range(num_iters):
+			print("at the top of iter loop %d" % num_iter)
 			process_event.wait()
 			process_event.clear()
 			tasks = np.random.randint(0, num_tasks, (self.world_size))

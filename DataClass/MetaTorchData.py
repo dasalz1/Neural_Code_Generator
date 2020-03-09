@@ -1,7 +1,7 @@
 import pandas as pd
 import torch, os, pickle, warnings, csv
 from torch.utils.data import Dataset, ConcatDataset, DataLoader
-from DataClass.data_utils import tokenize_fine_grained, create_vocab_dictionary, preprocess_tokens, preprocess_context, fix_quote_strings
+from DataClass.data_utils import tokenize_fine_grained, create_vocab_dictionary, preprocess_tokens, preprocess_context, fix_quote_strings, fix_quote_strings_context
 import numpy as np
 from DataClass.Constants import NO_CONTEXT_WORD, UNKNOWN_IDX
 from threading import Thread
@@ -152,7 +152,7 @@ class MetaRepo(Dataset):
                 self.get_line(idx, data_list)
                 return
         except:
-            x = self.read_pandas_line_quote()
+            x = self.read_pandas_line_quote(idx)
 
             x = np.array(fix_quote_strings(x[0, 0]) if self.retrieve_context else fix_quote_strings_context(x[0, 0], self.n_retrieved))
 
