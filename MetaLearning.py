@@ -106,8 +106,7 @@ class Learner(nn.Module):
 		print("finished meta")
 
 	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=10, checkpoint_interval=10000):
-		temp_grads = None
-		
+		accs = []; losses = []
 		while(True):
 			data_event.wait()
 			data = data_queue.get()
@@ -148,19 +147,23 @@ class Learner(nn.Module):
 			non_pad_mask = query_y[: 1:].ne(PAD_IDX)
 			n_word = non_pad_mask.sum().item()
 
-			acc = torch.FloatTensor([n_correct / n_word]).to(self.device)
+			# acc = torch.FloatTensor([n_correct / n_word]).to(self.device)
 
 			# loss, pred = self.model(query_x, query_y)
 			all_grads = autograd.grad(loss, self.model.parameters())
-			dist.reduce(loss/n_word, 0, op=dist.ReduceOp.SUM, async_op=True)
-			dist.reduce(acc, 0, op=dist.ReduceOp.SUM)
+			# dist.reduce(loss/n_word, 0, op=dist.ReduceOp.SUM, async_op=True)
+			# dist.reduce(acc, 0, op=dist.ReduceOp.SUM)
+			accs.append(n_correct / n_word)
+			losses.append(loss.item()/n_word)
+
 
 			for idx in range(len(all_grads)):
 				dist.reduce(all_grads[idx].data, 0, op=dist.ReduceOp.SUM, async_op=True)
 				all_grads[idx].data = all_grads[idx].data / self.world_size
 
 			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0:
-				tb_mle_meta_batch(tb, loss.to('cpu').item()/self.world_size, acc.to('cpu').numpy()[0]/self.world_size, self.num_iter)
+				tb_mle_meta_batch(tb, np.mean(losses), np.mean(accs), self.num_iter)
+				losses = []; accs = []
 
 			if self.process_id == 0:
 				self.num_iter += 1
