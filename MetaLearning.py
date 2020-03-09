@@ -80,26 +80,20 @@ class Learner(nn.Module):
 			hooks.append(v.register_hook(closure()))
 		return hooks
 
-	def _write_grads(self, original_state_dict, all_grads, temp_data):
+	def _write_grads(self, all_grads, temp_data):
 		# reload original model before taking meta-gradients
-		print("about to load model")
-		self.model.load_state_dict(original_state_dict)
+		self.model.load_state_dict(self.original_state_dict)
 		self.model.to(self.device)
 		self.model.train()
-		print("to traain and device")
 
 		self.optimizer.zero_grad()
-		print("zero gradding here")
 		dummy_query_x, dummy_query_y = temp_data
 		pred_logits = self.model(input_ids=dummy_query_x, decoder_input_ids=dummy_query_y[:, :-1])
-		print("did inference on dummy")
 		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 		dummy_loss, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
-		print("did loss on dummy")
 
 		# dummy_loss, _ = self.model(temp_data)
 		hooks = self._hook_grads(all_grads)
-		print("applied hooks")
 		dummy_loss.backward()
 		print("did backward loss")
 		torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
@@ -182,9 +176,11 @@ class Learner(nn.Module):
 				self.forward_passes += 1
 				if self.forward_passes == self.total_forward:
 					self.forward_passes = 0
-					self._write_grads(self.original_state_dict, temp_grads, (query_x, query_y))
+					self._write_grads(temp_grads, (query_x, query_y))
+					print("finished emtamaffdhd")
 				else:
 					self.model.load_state_dict(self.original_state_dict)
+					print("doing forward pass")
 					# self.model.to(self.device)
 				# finished batch so can load data again from master
 				process_event.set()

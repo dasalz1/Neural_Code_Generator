@@ -32,8 +32,6 @@ parser.add_argument("--query_batch_size", default=10, type=int)
 parser.add_argument("--total_forward", default=5, type=int)
 args = parser.parse_args()
 
-set_start_method('spawn', force=True)
-
 def main(args):
 	random.seed(12324)
 	np.random.seed(12324)
@@ -75,4 +73,5 @@ def main(args):
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
 if __name__=='__main__':
+	set_start_method('spawn')
 	main(args)
