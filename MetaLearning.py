@@ -112,10 +112,11 @@ class Learner(nn.Module):
 		while(True):
 			data_event.wait()
 			data = data_queue.get()
-			dist.barrier()
+			dist.barrier(async_op=True)
+
+			if self.process_id == 0: data_event.clear()
 
 			if self.process_id == 0 and self.num_iter != 0 and self.num_iter % checkpoint_interval == 0:
-				data_event.clear()
 				save_checkpoint(0, self.model, self.optimizer, suffix=str(self.num_iter))
 
 			# broadcast weights from master process to all others and save them to a detached dictionary for loadinglater
