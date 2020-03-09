@@ -5,7 +5,7 @@ from transformer.Models import Transformer
 from torch import nn
 from torch import optim
 from torch import autograd
-from torch.multiprocessing import Process, Queue
+from torch.multiprocessing import Process, Queue, set_start_method
 from multiprocessing import Event
 from transformer.bart import BartModel
 from DataClass.Constants import PAD_IDX
@@ -15,6 +15,7 @@ from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_meta_
 import os
 from copy import deepcopy
 
+set_start_method('spawn')
 
 class Learner(nn.Module):
 
