@@ -1,14 +1,14 @@
 from tensorboard_utils import Tensorboard
 from MetaLearning import MetaTrainer
 import argparse, random
-from DataClass.torchData import *
+# from DataClass.torchData import *
 from transformer.configuration_bart import BartConfig
 from DataClass.Constants import PAD_IDX, END_IDX
 from DataClass.torchData import MAX_LINE_LENGTH
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from DataClass.MetaTorchData import MetaRepo, MetaRetrieved
+from DataClass.MetaTorchData import *
 from torch.multiprocessing import set_start_method
 from datetime import date
 
@@ -28,27 +28,46 @@ parser.add_argument("--meta_batch_size", default=4, type=int)
 parser.add_argument("--epochs", default=10, type=int)
 parser.add_argument("--num_updates", default=10, type=int)
 parser.add_argument("--k_shot", default=5, type=int)
+parser.add_argument("--meta_retrieve", default=False, action='store_true')
 parser.add_argument("--query_batch_size", default=10, type=int)
 parser.add_argument("--total_forward", default=5, type=int)
+parser.add_argument("--retrieve_context", default=False, action='store_true')
+parser.add_argument("--n_retrieved", default=1, type=int)
 args = parser.parse_args()
 
 def main(args):
-	random.seed(12324)
-	np.random.seed(12324)
-	torch.manual_seed(12324)
+	random.seed(68492)
+	np.random.seed(68492)
+	torch.manual_seed(68492)
 
 	VOCAB_SIZE = len(word2idx)
 	num_validation_repos = 50
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
+
+	# MetaRetrieved
+	# MetaRepo = MetaRetrieved
 	print(len(repo_files))
 	data_loaders = []; validation_loaders = []
 	for dataset in repo_files[num_validation_repos:]:
-		temp = MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size)
+		if args.meta_retrieve:
+			temp = MetaRetrieved(args.filepath+'/'+dataset, n_retrieved=args.n_retrieved)
+		else:
+			temp = MetaRepo(args.filepath+'/'+dataset, retrieve_context=args.retrieve_context, 
+									n_retrieved=args.n_retrieved, k_shot=args.k_shot, 
+									query_batch_size=args.query_batch_size)
+
 		if len(temp) > 3: data_loaders.append(iter(DataLoader(temp, shuffle=True, batch_size=1)))
+
 	for dataset in repo_files[:num_validation_repos]:
-		temp = MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size)
+		if args.meta_retrieve:
+			temp = MetaRetrieved(args.filepath+'/'+dataset, n_retrieved=args.n_retrieved)
+		else:
+			temp = MetaRepo(args.filepath+'/'+dataset, retrieve_context=args.retrieve_context, 
+									n_retrieved=args.n_retrieved, k_shot=args.k_shot, 
+									query_batch_size=args.query_batch_size)
+
 		if len(temp) > 3: validation_loaders.append(iter(DataLoader(temp, shuffle=True, batch_size=1)))
 	# data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)) 
 	# data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)) for dataset in repo_files[num_validation_repos:102]]

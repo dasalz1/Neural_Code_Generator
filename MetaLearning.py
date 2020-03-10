@@ -29,6 +29,7 @@ class Learner(nn.Module):
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
+			os.nice(-19)
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
@@ -41,6 +42,26 @@ class Learner(nn.Module):
 		# if process == 0:
 			# optim_params = optim_params.insert(0, self.model_parameters())
 			# self.optimizer = optimizer(*optim_params)
+
+	def _write_prediction(self, support_x, pred_logits, query_y):
+		support_x_pred = pd.DataFrame(support_x[:, 1:].to('cpu').numpy())
+		support_x_pred = np.where(support_x_pred.isin(idx2word.keys()), support_x_pred.replace(idx2word), UNKNOWN_WORD)
+		pred_max = pred_logits.reshape(-1, MAX_LINE_LENGTH-1, len(idx2word)).max(2)[1]
+		pred = pd.DataFrame(pred_max.to('cpu').numpy())
+		pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
+		trg_ys = pd.DataFrame(query_y[:, 1:].to('cpu').numpy())
+		trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
+		with open('meta-predictions.txt', 'a') as f:
+			f.write("On iteration %d" % self.num_iter)
+			f.write("The support here\n")
+			f.write(str(support_x_pred))
+			f.write("\n")
+			f.write("One of the queries\n")
+			f.write(str(trg_words[0]))
+			f.write("\n")
+			f.write("one of the predictions\n")
+			f.write(str(pred_words[0]))
+			f.write("\n\n\n\n\n")
 
 	def compute_mle_loss(self, pred, target, smoothing, log=False):
 		def compute_loss(pred, target, smoothing):
@@ -88,15 +109,15 @@ class Learner(nn.Module):
 
 		self.optimizer.zero_grad()
 		dummy_query_x, dummy_query_y = temp_data
-		print(" ")
+		# print(" ")
 		pred_logits = self.model(input_ids=dummy_query_x, decoder_input_ids=dummy_query_y[:, :-1])
 		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 		dummy_loss, _, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
-		print(" ")
+		# print(" ")
 		# dummy_loss, _ = self.model(temp_data)
 		hooks = self._hook_grads(all_grads)
 		dummy_loss.backward()
-		print(" ")
+		# print(" ")
 		torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 		
 		self.optimizer.step()
@@ -107,7 +128,7 @@ class Learner(nn.Module):
 
 		print("finished meta")
 
-	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=50, checkpoint_interval=10000):
+	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=10, checkpoint_interval=1000):
 		n_word_total = 0.0
 		n_word_correct = 0.0
 		total_loss = 0.0
@@ -151,40 +172,19 @@ class Learner(nn.Module):
 			n_word_total += n_total
 			n_word_correct += n_correct
 			total_loss += loss.item()
-			
 
 			# loss, pred = self.model(query_x, query_y)
 			all_grads = autograd.grad(loss, self.model.parameters())
-			
-			if self.process_id == 0:
 				
-
 			for idx in range(len(all_grads)):
 				dist.reduce(all_grads[idx].data, 0, op=dist.ReduceOp.SUM, async_op=True)
 				all_grads[idx].data = all_grads[idx].data / self.world_size
 
-			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0:
+			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0 and self.num_iter != 0:
 				tb_mle_meta_batch(tb, total_loss/n_word_total, n_word_correct/n_word_total, self.num_iter)
 				n_word_total = 0.0; n_word_correct = 0.0; total_loss = 0.0
-
-				support_x_pred = pd.DataFrame(support_x[:, 1:].to('cpu').numpy())
-				support_x_pred = np.where(support_x_pred.isin(idx2word.keys()), support_x_pred.replace(idx2word), UNKNOWN_WORD)
-				pred_max = pred_logits.reshape(-1, 127, len(idx2word)).max(2)[1]
-				pred = pd.DataFrame(pred_max.to('cpu').numpy())
-				pred_words = np.where(pred.isin(idx2word.keys()), pred.replace(idx2word), UNKNOWN_WORD)
-				trg_ys = pd.DataFrame(query_y[:, 1:].to('cpu').numpy())
-				trg_words = np.where(trg_ys.isin(idx2word.keys()), trg_ys.replace(idx2word), UNKNOWN_WORD)
-				with open('meta-predictions.txt', 'a') as f:
-					f.write("On iteration %d" % self.num_iter)
-					f.write("The support here\n")
-					f.write(support_x_pred)
-					f.write("\n")
-					f.write("One of the queries\n")
-					f.write(trg_words[0])
-					f.write("\n")
-					f.write("one of the predictions\n")
-					f.write(pred_words[0])
-					f.write("\n\n\n\n\n")
+				self._write_prediction(support_x, pred_logits, query_y)
+				
 
 			if self.process_id == 0:
 				self.num_iter += 1

@@ -58,7 +58,6 @@ def main(args):
 		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]])
 		validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]])
 
-
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	data_loader = DataLoader(datasets,
@@ -68,8 +67,6 @@ def main(args):
 							# num_workers=92)
 
 	print("Finished creating data loader")
-
-
 
 	validation_loader = DataLoader(validsets,
 							batch_size=args.batch_size,

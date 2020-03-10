@@ -90,8 +90,8 @@ class EditorNoRetrievalTrainer:
 			total_mle_loss = 0.0
 			n_word_total = 0.0
 			n_word_correct = 0.0
-			optimizer = AdamW(model.parameters(), lr=1e-2)
-			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=40000, num_training_steps=len(data_loader))
+			optimizer = AdamW(model.parameters(), lr=6e-4)
+			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]

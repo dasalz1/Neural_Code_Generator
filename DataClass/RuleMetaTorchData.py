@@ -33,9 +33,8 @@ class MetaRetrieved(Dataset):
         self.filename = filename
         self.n_retrieved = n_retrieved
         self.chunksize = 1 # more than this requires reshaping in this class or collate function
-        temp = next(pd.read_csv(self.filename, skiprows = 0, chunksize=1, header=None))
+        self.len = pd.read_csv(self.filename, skiprows=0, header=None).shape[0]
         self.max_dim = MAX_LINE_LENGTH
-        self.len = int(temp.values[0][0] / self.chunksize)
         self.num_cols = self.n_retrieved*2+2
         
     def __len__(self):
@@ -43,15 +42,15 @@ class MetaRetrieved(Dataset):
 
     def read_pandas_line_quote(self, idx):
         return next(pd.read_csv(self.filename, 
-                skiprows=idx*self.chunksize+1,
+                skiprows=idx*self.chunksize,
                 chunksize=self.chunksize, header=None,
-                sep=',\s+', quoting=csv.QUOTE_ALL, dtype=str)).fillna(NO_CONTEXT_WORD).values
+                sep=',\s+', quoting=csv.QUOTE_ALL, dtype=str, index_col=0)).fillna(NO_CONTEXT_WORD).values
 
     def read_pandas_line(self, idx):
         return next(pd.read_csv(self.filename,
-            skiprows=idx*self.chunksize+1,
+            skiprows=idx*self.chunksize,
             chunksize=self.chunksize,
-            header=None, dtype=str)).fillna(NO_CONTEXT_WORD).values
+            header=None, dtype=str, index_col=0)).fillna(NO_CONTEXT_WORD).values
 
     def __getitem__(self, idx):
         try:
@@ -92,7 +91,7 @@ class MetaRepo(Dataset):
         self.n_retrieved = n_retrieved
         self.retrieve_context = retrieve_context
         self.chunksize = 1 # more than this requires reshaping in this class or collate function
-        temp_lines = int(next(pd.read_csv(self.filename, skiprows = 0, chunksize=1, header=None)).values[0][0])
+        temp_lines = pd.read_csv(self.filename, skiprows=0, header=None).shape[0]
 
         self.split_idx = int(temp_lines - temp_lines/(k_shot-2))
 
@@ -117,13 +116,13 @@ class MetaRepo(Dataset):
 
     def read_pandas_line_quote(self, idx):
         return next(pd.read_csv(self.filename, 
-                skiprows=idx*self.chunksize+1,
+                skiprows=idx*self.chunksize,
                 chunksize=self.chunksize, header=None,
                 sep=',\s+', quoting=csv.QUOTE_ALL, dtype=str)).fillna(NO_CONTEXT_WORD).values
 
     def read_pandas_line(self, idx):
         return next(pd.read_csv(self.filename,
-            skiprows=idx*self.chunksize+1,
+            skiprows=idx*self.chunksize,
             chunksize=self.chunksize,
             header=None, dtype=str)).fillna(NO_CONTEXT_WORD).values
 
