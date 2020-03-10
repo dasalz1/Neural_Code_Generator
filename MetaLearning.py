@@ -20,7 +20,7 @@ from copy import deepcopy
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3, (0.9, 0.995), 1e-8), model_params=None):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-4, (0.9, 0.998), 1e-8), model_params=None):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
