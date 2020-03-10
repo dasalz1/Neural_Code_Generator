@@ -95,11 +95,11 @@ def main(args):
 								max_encoder_position_embeddings=MAX_LINE_LENGTH,
 								max_decoder_position_embeddings=MAX_LINE_LENGTH)
 	
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	device = 'cpu'#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params)#, total_forward=args.total_forward)
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
 if __name__=='__main__':
-	set_start_method('spawn', force=False)
+	# set_start_method('spawn', force=False)
 	main(args)

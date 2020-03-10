@@ -13,6 +13,7 @@ from DataClass.Constants import PAD_IDX, UNKNOWN_WORD
 import numpy as np
 import pandas as pd
 from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_meta_batch
+from transformers import AdamW
 import os
 from copy import deepcopy
 
@@ -20,7 +21,7 @@ from copy import deepcopy
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-4, (0.9, 0.998), 1e-8), model_params=None):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-5, (0.9, 0.998), 1e-8), model_params=None):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
@@ -29,6 +30,7 @@ class Learner(nn.Module):
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
+			# scheduler = 
 			# os.nice(-19)
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
