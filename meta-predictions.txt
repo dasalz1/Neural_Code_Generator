@@ -1,0 +1,73 @@
+On iteration 4The support here
+[['def' '_' '<UNK>' ... '<PAD>' '<PAD>' '<PAD>']
+ ['def' '_' 'associate' ... '<PAD>' '<PAD>' '<PAD>']
+ ['policy' '.' 'init' ... '<PAD>' '<PAD>' '<PAD>']
+ ...
+ ['cfg' '.' 'Str' ... '<PAD>' '<PAD>' '<PAD>']
+ ['def' 'load' '_' ... '<PAD>' '<PAD>' '<PAD>']
+ ['policy' '.' 'init' ... '<PAD>' '<PAD>' '<PAD>']]
+One of the queries
+['else' ':' '<EOS>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>']
+one of the predictions
+['policy' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_']
+
+
+
+
+On iteration 8The support here
+[['actual' '=' 'dd' ... '<PAD>' '<PAD>' '<PAD>']
+ ['dd' '.' 'timer' ... '<PAD>' '<PAD>' '<PAD>']
+ ['class' 'Test' 'Data' ... '<PAD>' '<PAD>' '<PAD>']
+ ...
+ ['self' '.' 'service' ... '<PAD>' '<PAD>' '<PAD>']
+ ['expected' '=' "'" ... '<PAD>' '<PAD>' '<PAD>']
+ ['full' '_' 'metric' ... '<PAD>' '<PAD>' '<PAD>']]
+One of the queries
+['print' '(' 'metric' ')' '<EOS>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>'
+ '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>' '<PAD>']
+one of the predictions
+['metric' '_' "'" '_' '<EOS>' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_' '_'
+ '_' '_' '_']
+
+
+
+

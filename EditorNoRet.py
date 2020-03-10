@@ -84,9 +84,9 @@ class EditorNoRetrievalTrainer:
 				tb_bleu_validation_epoch(tb, avg_bleu, avg_accuracy, epoch)
 
 
-	def train(self, model, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=5000):
+	def train(self, model, data_loader, validation_loader, tb=None, epochs=20, log_interval=100, checkpoint_interval=100):
 		optimizer = AdamW(model.parameters(), lr=6e-4)
-		scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=3200, num_training_steps=len(data_loader)*3)
+		scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=3000, num_training_steps=epochs*len(data_loader))
 		for epoch in range(epochs):
 			model.train()
 			total_mle_loss = 0.0
@@ -115,6 +115,7 @@ class EditorNoRetrievalTrainer:
 				n_word_correct += n_correct
 				if tb is not None and batch_idx % log_interval == 0:
 					tb_mle_batch(tb, total_mle_loss, n_word_total, n_word_correct, epoch, batch_idx, len(data_loader))
+					total_mle_loss = 0.0; n_word_total = 0.0; n_word_correct = 0.0
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
 					pred_max = pred_logits.reshape(-1, 127, len(idx2word)).max(2)[1]
@@ -135,10 +136,10 @@ class EditorNoRetrievalTrainer:
 			loss_per_word = total_mle_loss / n_word_total
 			accuracy = n_word_correct / n_word_total
 
-			if tb is not None:
-				tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
+			# if tb is not None:
+				# tb_mle_epoch(tb, loss_per_word, accuracy, epoch)
 
-			self.validate_BLEU(model, deepcopy(validation_loader), epoch, tb)
+			# self.validate_BLEU(model, deepcopy(validation_loader), epoch, tb)
 
 
 # for batch_idx, batch in enumerate(tqdm(validation_loader, mininterval=2, leave=False)):

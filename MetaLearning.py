@@ -130,7 +130,7 @@ class Learner(nn.Module):
 
 		print("finished meta")
 
-	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=10, checkpoint_interval=1000):
+	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=4, checkpoint_interval=1000):
 		n_word_total = 0.0
 		n_word_correct = 0.0
 		total_loss = 0.0
