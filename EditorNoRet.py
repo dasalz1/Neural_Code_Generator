@@ -95,11 +95,10 @@ class EditorNoRetrievalTrainer:
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]
-				print(batch_xs.shape)
-				print(batch_ys.shape)
 				pred_logits = model(input_ids=batch_xs, decoder_input_ids=batch_ys[:, :-1])
-				# pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
-				pred_logits = pred_logits.reshape(-1, pred_logits.size(2))
+				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
+
+				# pred_logits = pred_logits.reshape(-1, pred_logits.size(2))
 				loss, n_correct, n_total = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
 				loss.backward()
 				

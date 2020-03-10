@@ -42,7 +42,8 @@ def main(args):
 	num_validation_repos = 50
 
 	if args.use_retriever:
-		args.n_src_length = (2*args.n_retrieved-1)+(args.n_src_length)*(args.n_retrieved*2)+1+args.n_retrieved
+		args.n_src_length = (args.n_src_length+1) + args.n_retrieved*2*args.n_src_length + (2*args.n_retrieved-1)
+		print(args.n_src_length)
 
 	if args.use_retriever: args.exp_name += ("retrieved_%d" % args.n_retrieved)
 

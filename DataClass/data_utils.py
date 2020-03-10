@@ -90,7 +90,7 @@ def create_vocab_dictionary(path, file, save=True, filter_count=500):
     idx2word[PAD_IDX] = PAD_WORD
     idx2word[END_IDX] = END_WORD
     idx2word[START_IDX] = START_WORD
-    idx2word[NO_CONTEXT_IDX] = NO_CONTEXT_IDX
+    idx2word[NO_CONTEXT_IDX] = NO_CONTEXT_WORD
     idx2word[UNKNOWN_IDX] = UNKNOWN_WORD
     idx2word[SEP_CONTEXT_IDX] = SEP_CONTEXT_WORD
     idx2word[SEP_PAIR_IDX] = SEP_PAIR_WORD
