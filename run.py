@@ -58,7 +58,7 @@ def main(args):
 		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]])
 		validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]])
 
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	device = "cuda:1"#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	data_loader = DataLoader(datasets,
 							batch_size=args.batch_size,
@@ -102,9 +102,9 @@ def main(args):
 		torch.backends.cudnn.deterministic=True
 		torch.backends.cudnn.benchmark = False
 		
-	if torch.cuda.device_count() > 1:
-		print("Using", torch.cuda.device_count(), "GPUs...")
-		model = torch.nn.DataParallel(model)
+	# if torch.cuda.device_count() > 1:
+		# print("Using", torch.cuda.device_count(), "GPUs...")
+		# model = torch.nn.DataParallel(model)
 	
 	model.to(device)
 

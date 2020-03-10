@@ -29,7 +29,7 @@ class Learner(nn.Module):
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
-			os.nice(-19)
+			# os.nice(-19)
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
@@ -109,15 +109,15 @@ class Learner(nn.Module):
 
 		self.optimizer.zero_grad()
 		dummy_query_x, dummy_query_y = temp_data
-		# print(" ")
+		print(" ")
 		pred_logits = self.model(input_ids=dummy_query_x, decoder_input_ids=dummy_query_y[:, :-1])
 		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 		dummy_loss, _, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
-		# print(" ")
+		print(" ")
 		# dummy_loss, _ = self.model(temp_data)
 		hooks = self._hook_grads(all_grads)
 		dummy_loss.backward()
-		# print(" ")
+		print(" ")
 		torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 		
 		self.optimizer.step()
