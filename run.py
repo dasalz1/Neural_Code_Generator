@@ -1,7 +1,7 @@
 from tensorboard_utils import Tensorboard
 from DataClass.torchData import *
 from DataClass.Constants import PAD_IDX, END_IDX
-from DataClass.torchData import MAX_LINE_LENGTH
+# from DataClass.torchData import MAX_LINE_LENGTH
 from EditorNoRet import EditorNoRetrievalTrainer
 from torch.utils.data import ConcatDataset, DataLoader
 from transformer.bart import BartModel
@@ -15,7 +15,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--filepath", default='../repo_files', type=str)
+parser.add_argument("--filepath", default='./repo_files', type=str)
 parser.add_argument("--exp_name", default='EditorPairTrain', type=str)
 parser.add_argument("--unique_id", default=str(date.today()), type=str)
 parser.add_argument("--num_layers", default=6, type=int)
@@ -28,7 +28,7 @@ parser.add_argument("--inner_dimension", default=2048, type=int)
 parser.add_argument("--batch_size", default=24, type=int)
 parser.add_argument("--epochs", default=10, type=int)
 parser.add_argument("--use_retriever", default=False, action='store_true')
-parser.add_argument("--n_retrieved", default=2, type=int)
+parser.add_argument("--n_retrieved", default=1, type=int)
 parser.add_argument("--n_src_length", default=MAX_LINE_LENGTH, type=int)
 parser.add_argument("--n_trg_length", default=MAX_LINE_LENGTH, type=int)
 args = parser.parse_args()

@@ -76,10 +76,9 @@ class RetrieveDataset(Dataset):
         try:
             x = next(pd.read_csv(self.filename,
                             skiprows=idx * self.chunksize,#+1,
-                            chunksize=self.chunksize, header=None, dtype=str)).fillna(NO_CONTEXT_WORD).values
+                            chunksize=self.chunksize, header=None, dtype=str, index_col=0)).fillna(NO_CONTEXT_WORD).values
 
                     # something is broken here so just give filler
-            x = x[:, 1:]
             
             if len(x[0]) != self.num_cols:
                 print(x)
@@ -89,11 +88,10 @@ class RetrieveDataset(Dataset):
             x = next(pd.read_csv(self.filename,
                                 skiprows=idx * self.chunksize,#+1,
                                 chunksize=self.chunksize, header=None,
-                                sep=',\s+', quoting=csv.QUOTE_ALL, dtype=str)).fillna(NO_CONTEXT_WORD).values
+                                sep=',\s+', quoting=csv.QUOTE_ALL, dtype=str, index_col=0)).fillna(NO_CONTEXT_WORD).values
 
 
             x = np.array(fix_quote_strings_context(x[0, 0], self.n_retrieved))
-            x = x[:, 1:]
 
         context_tokens = preprocess_context(x, self.n_retrieved, self.max_dim)
 
