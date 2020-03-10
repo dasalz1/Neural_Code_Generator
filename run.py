@@ -102,9 +102,9 @@ def main(args):
 		torch.backends.cudnn.deterministic=True
 		torch.backends.cudnn.benchmark = False
 		
-	# if torch.cuda.device_count() > 1:
-		# print("Using", torch.cuda.device_count(), "GPUs...")
-		# model = torch.nn.DataParallel(model)
+	if torch.cuda.device_count() > 1:
+		print("Using", torch.cuda.device_count(), "GPUs...")
+		model = torch.nn.DataParallel(model, device_ids=[1, 2, 3])
 	
 	model.to(device)
 
