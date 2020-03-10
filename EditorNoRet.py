@@ -91,17 +91,13 @@ class EditorNoRetrievalTrainer:
 			n_word_total = 0.0
 			n_word_correct = 0.0
 			optimizer = AdamW(model.parameters(), lr=6e-4)
-			# scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
-			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=600, num_training_steps=len(data_loader))
+			scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=32000, num_training_steps=len(data_loader))
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 				trg_ys = batch_ys[:, 1:]
-				try:
-					pred_logits = model(input_ids=batch_xs, decoder_input_ids=batch_ys[:, :-1])
-				except:
-					print(batch_xs)
-					print("######## asdasdasd #########")
-					print(batch_ys[:, :-1])
+				print(batch_xs.shape)
+				print(batch_ys.shape)
+				pred_logits = model(input_ids=batch_xs, decoder_input_ids=batch_ys[:, :-1])
 				# pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 				pred_logits = pred_logits.reshape(-1, pred_logits.size(2))
 				loss, n_correct, n_total = self.compute_mle_loss(pred_logits, trg_ys, smoothing=True)
