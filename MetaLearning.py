@@ -26,12 +26,10 @@ class Learner(nn.Module):
 
 		self.model = BartModel(model_params)
 
-
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
-			self.scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=1000, num_training_steps=num_iters)
-
+			self.scheduler = get_cosine_schedule_with_warmup(self.optimizer, num_warmup_steps=1000, num_training_steps=num_iters)
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.04)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
@@ -198,7 +196,7 @@ class MetaTrainer:
 
 		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters) for process_id in range(world_size)]
 		# gpu backend instead of gloo
-		self.backend = "nccl"
+		self.backend = "gloo"#"nccl"
 		self.num_iters = num_iters
 		
 	def init_process(self, process_id, data_queue, data_event, process_event, num_updates, tb, address='localhost', port='29500'):

@@ -30,7 +30,6 @@ parser.add_argument("--num_updates", default=10, type=int)
 parser.add_argument("--k_shot", default=5, type=int)
 parser.add_argument("--meta_retrieve", default=False, action='store_true')
 parser.add_argument("--query_batch_size", default=10, type=int)
-parser.add_argument("--total_forward", default=5, type=int)
 parser.add_argument("--retrieve_context", default=False, action='store_true')
 parser.add_argument("--n_retrieved", default=1, type=int)
 args = parser.parse_args()
@@ -69,19 +68,10 @@ def main(args):
 									query_batch_size=args.query_batch_size)
 
 		if len(temp) > 3: validation_loaders.append(iter(DataLoader(temp, shuffle=True, batch_size=1)))
-	# data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)) 
-	# data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot, query_batch_size=args.query_batch_size), shuffle=True, batch_size=1)) for dataset in repo_files[num_validation_repos:102]]
-	# validation_data_loaders = [iter(DataLoader(MetaRepo(args.filepath+'/'+dataset, False, k_shot=args.k_shot), shuffle=True, batch_size=1)) for dataset in repo_files[98:num_validation_repos]]
 
 	if torch.cuda.is_available:
 		torch.backends.cudnn.deterministic=True
 		torch.backends.cudnn.benchmark = False
-
-
-	# model_params = (VOCAB_SIZE, VOCAB_SIZE, PAD_IDX, PAD_IDX, 
-	# 				args.d_word_vec, args.d_word_vec, args.inner_dimension, args.num_layers,
-	# 				args.num_heads, args.key_dimension, args.value_dimension, args.dropout,
-	# 				MAX_LINE_LENGTH, MAX_LINE_LENGTH, True, True)
 
 	model_params = BartConfig(vocab_size=VOCAB_SIZE, pad_token_id=PAD_IDX,
 								eos_token_id=END_IDX, d_model=args.d_word_vec,
@@ -97,7 +87,7 @@ def main(args):
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params)#, total_forward=args.total_forward)
+	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params)
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
 if __name__=='__main__':

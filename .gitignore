@@ -18,3 +18,4 @@ rulebased_examples_first/linksWY%d.csv' % i, ic=eop) "): []}, {(0, ' for i in ra
 rulebased_examples_first/data_master.csv', 'rU') as file: "): []}]
 checkpoint-120000.pth
 checkpoint-ruleseq2seq.pth
+meta-predictions.txt
