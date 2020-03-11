@@ -19,3 +19,5 @@ rulebased_examples_first/data_master.csv', 'rU') as file: "): []}]
 checkpoint-120000.pth
 checkpoint-ruleseq2seq.pth
 meta-predictions.txt
+rulebased_examples_second/.DS_Store
+rulebased_examples_first/.DS_Store

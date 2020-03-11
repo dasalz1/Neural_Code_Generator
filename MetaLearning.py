@@ -22,11 +22,12 @@ from tqdm import tqdm
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(6e-4,), model_params=None, num_iters=25000):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(6e-4,), model_params=None, num_iters=25000, load_model=False):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
-
+		if load_model:
+			self.model.load_state_dict(torch.load('../checkpoint-bigseq2seqnaive.pth')['model'])
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
@@ -190,10 +191,10 @@ class Learner(nn.Module):
 
 class MetaTrainer:
 
-	def __init__(self, world_size, device='cpu', model_params=None, num_iters=25000):
+	def __init__(self, world_size, device='cpu', model_params=None, num_iters=25000, load_model=False):
 		self.world_size = world_size
 
-		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters) for process_id in range(world_size)]
+		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters, load_model=load_model) for process_id in range(world_size)]
 		# gpu backend instead of gloo
 		self.backend = "gloo"#"nccl"
 		self.num_iters = num_iters

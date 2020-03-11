@@ -8,7 +8,7 @@ from multiprocessing import Process
 
 from DataClass.Constants import NO_CONTEXT_WORD#PAD_WORD, START_WORD, END_WORD, PAD_IDX, START_IDX, END_IDX, NO_CONTEXT_IDX, NO_CONTEXT_WORD, UNKNOWN_IDX, UNKNOWN_WORD
 
-MAX_REPO_THREADS = 32#160
+MAX_REPO_THREADS = 16#160
 MAX_TOKENIZE_THREADS = 248
 MAX_REPO_LINES = 100000
 MIN_REPO_LINES = 100
@@ -32,7 +32,7 @@ class Crawler:
 		try:
 			name = url.split('/')[-1][:-4]
 			repo_path = os.path.join(output_dir, name)
-			if os.path.exists(repo_path) or os.path.exists(name.replace('.', '_') + filename_ending + '.csv'):
+			if os.path.exists(repo_path) or os.path.exists(name.replace('.', '_') + filename_ending + '.csv') or os.path.exists('../repo_files/' + name.replace('.', '_') + filename_ending + '.csv'):
 				print(f'Skipping existing repository: {name}')
 				return
 			else:
@@ -84,6 +84,7 @@ class Crawler:
 		all_lines = pd.concat([pd.DataFrame(np.array([all_lines.shape[0], None]).reshape(1, -1), columns=all_lines.columns), all_lines], axis=0)
 		all_lines.to_csv(name.replace('.', '_') + filename_ending + '.csv', header=None, index=None)
 		os.system("rm -rf %s" % name)
+		print("finished")
 
 	# assumes dir is a path to a directory whose subfolders are the repos
 	def generate_pair_datasets(self, url_csv='repos.csv', output_dir = './repo_files'):
