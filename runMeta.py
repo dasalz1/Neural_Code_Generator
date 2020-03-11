@@ -32,6 +32,7 @@ parser.add_argument("--meta_retrieve", default=False, action='store_true')
 parser.add_argument("--query_batch_size", default=10, type=int)
 parser.add_argument("--retrieve_context", default=False, action='store_true')
 parser.add_argument("--n_retrieved", default=1, type=int)
+parser.add_argument("--num_iters", default=25000, type=int)
 args = parser.parse_args()
 
 def main(args):
@@ -87,7 +88,7 @@ def main(args):
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params)
+	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params, num_iters=args.num_iters)
 	trainer.train(data_loaders, tb, num_updates=args.num_updates)
 
 if __name__=='__main__':

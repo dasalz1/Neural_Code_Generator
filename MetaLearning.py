@@ -21,7 +21,7 @@ from copy import deepcopy
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(6e-4, (0.9, 0.998), 1e-8), model_params=None, num_iters=25000):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, (6e-4), model_params=None, num_iters=25000):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
@@ -125,7 +125,7 @@ class Learner(nn.Module):
 
 		print("finished meta")
 
-	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=4, checkpoint_interval=1000):
+	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=25, checkpoint_interval=250):
 		n_word_total = 0.0
 		n_word_correct = 0.0
 		total_loss = 0.0
