@@ -13,7 +13,7 @@ from DataClass.Constants import PAD_IDX, UNKNOWN_WORD
 import numpy as np
 import pandas as pd
 from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_meta_batch
-from transformers import AdamW
+from transformers import AdamW, get_cosine_schedule_with_warmup
 import os
 from copy import deepcopy
 
@@ -21,7 +21,7 @@ from copy import deepcopy
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-5, (0.9, 0.998), 1e-8), model_params=None):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(6e-4, (0.9, 0.998), 1e-8), model_params=None, num_iters=25000):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
@@ -30,20 +30,16 @@ class Learner(nn.Module):
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
-			# scheduler = 
-			# os.nice(-19)
+			self.scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=1000, num_training_steps=num_iters)
 
-		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
+
+		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.04)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
 		self.model.to(self.device)
 		self.process_id = process_id
 		self.num_iter = 0
 		self.world_size = world_size
 		self.original_state_dict = {}
-
-		# if process == 0:
-			# optim_params = optim_params.insert(0, self.model_parameters())
-			# self.optimizer = optimizer(*optim_params)
 
 	def _write_prediction(self, support_x, pred_logits, query_y):
 		support_x_pred = pd.DataFrame(support_x[:, 1:].to('cpu').numpy())
@@ -123,6 +119,7 @@ class Learner(nn.Module):
 		torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 		
 		self.optimizer.step()
+		self.scheduler.step()
 		print("did optimzier step")
 		# gpu memory explodes if you dont remove hooks
 		for h in hooks:
@@ -196,12 +193,13 @@ class Learner(nn.Module):
 
 class MetaTrainer:
 
-	def __init__(self, world_size, device='cpu', model_params=None):
+	def __init__(self, world_size, device='cpu', model_params=None, num_iters=25000):
 		self.world_size = world_size
 
-		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params) for process_id in range(world_size)]
+		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters) for process_id in range(world_size)]
 		# gpu backend instead of gloo
-		self.backend = "gloo"#"nccl"
+		self.backend = "nccl"
+		self.num_iters = num_iters
 		
 	def init_process(self, process_id, data_queue, data_event, process_event, num_updates, tb, address='localhost', port='29500'):
 		os.environ['MASTER_ADDR'] = address
@@ -210,7 +208,7 @@ class MetaTrainer:
 		self.meta_learners[process_id](num_updates, data_queue, data_event, process_event, tb)
 
 	# dataloaders is list of the iterators of the dataloaders for each task
-	def train(self, data_loaders, tb=None, num_updates = 5, num_iters=250000):
+	def train(self, data_loaders, tb=None, num_updates = 5):
 		data_queue = Queue()
 		# for notifying when to recieve data
 		data_event = Event()
@@ -228,7 +226,7 @@ class MetaTrainer:
 													tb if process_id == 0 else None)))
 			processes[-1].start()
 
-		for num_iter in range(num_iters):
+		for num_iter in range(self.num_iters):
 			print("at the top of iter loop %d" % num_iter)
 			process_event.wait()
 			process_event.clear()
@@ -242,8 +240,6 @@ class MetaTrainer:
 								task_data[2].numpy()[0], task_data[3].numpy()[0]))
 				
 			data_event.set()
-
-		new_model = self.meta_learners[0].model.original_state_dict
 
 		for p in processes:
 			p.terminate()

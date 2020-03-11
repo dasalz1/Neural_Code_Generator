@@ -5,7 +5,7 @@ os.environ['CUDA_VISIBLE_DEVICES']='2'
 from gtd.utils import Config
 
 from editor_code.copy_editor.retrieve_edit_run import RetrieveEditTrainingRuns
-print os.environ['COPY_EDIT_DATA']
+print(os.environ['COPY_EDIT_DATA'])
 import sys
 
 #no-profile
