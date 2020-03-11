@@ -51,6 +51,8 @@ def main(args):
 
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 	# shuffle(repo_files)
+	print(repo_files[:num_validation_repos])
+	return
 
 	if args.use_retriever:
 		datasets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[num_validation_repos:]])

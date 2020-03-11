@@ -126,9 +126,9 @@ class EditorNoRetrievalTrainer:
 					with open('output_tests.txt', 'a') as f:
 						f.write("On the iteration %d" % batch_idx)
 						f.write("The actual line:\n")
-						f.write(trg_words[0])
+						f.write(str(trg_words[0]))
 						f.write("The prediciton of the line:\n")
-						f.write(pred_words[0])
+						f.write(str(pred_words[0]))
 						f.write('\n\n\n\n\n')
 						
 					save_checkpoint(epoch, model, optimizer, scheduler, suffix=str(batch_idx))
