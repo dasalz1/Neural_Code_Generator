@@ -26,10 +26,9 @@ class Learner(nn.Module):
 
 		self.model = BartModel(model_params)
 
-		# if process_id == 0:
-		optim_params = (self.model.parameters(),) + optim_params
-		self.optimizer = optimizer(*optim_params)
-		self.scheduler = get_cosine_schedule_with_warmup(self.optimizer, num_warmup_steps=1000, num_training_steps=num_iters)
+		if process_id == 0:
+			optim_params = (self.model.parameters(),) + optim_params
+			self.optimizer = optimizer(*optim_params)
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.04)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
@@ -117,7 +116,6 @@ class Learner(nn.Module):
 		torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 		
 		self.optimizer.step()
-		self.scheduler.step()
 		print("did optimzier step")
 		# gpu memory explodes if you dont remove hooks
 		for h in hooks:
