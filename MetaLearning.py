@@ -21,7 +21,7 @@ from copy import deepcopy
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, (6e-4), model_params=None, num_iters=25000):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(6e-4,), model_params=None, num_iters=25000):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
@@ -29,7 +29,7 @@ class Learner(nn.Module):
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
-			self.scheduler = get_cosine_schedule_with_warmup(self.optimizer, num_warmup_steps=1000, num_training_steps=num_iters)
+		self.scheduler = get_cosine_schedule_with_warmup(self.optimizer, num_warmup_steps=1000, num_training_steps=num_iters)
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.04)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
