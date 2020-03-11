@@ -16,6 +16,7 @@ from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_meta_
 from transformers import AdamW, get_cosine_schedule_with_warmup
 import os
 from copy import deepcopy
+from tqdm import tqdm
 
 
 
@@ -222,7 +223,7 @@ class MetaTrainer:
 													tb if process_id == 0 else None)))
 			processes[-1].start()
 
-		for num_iter in range(self.num_iters):
+		for num_iter in tqdm(range(self.num_iters), mininterval=2, leave=False):
 			print("at the top of iter loop %d" % num_iter)
 			process_event.wait()
 			process_event.clear()
