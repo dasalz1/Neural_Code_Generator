@@ -47,13 +47,12 @@ class VAETrainer:
 			for batch_idx, batch in enumerate(tqdm(data_loader, mininterval=2, leave=False)):
 				batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 
-				lengths = []
-				for i in range(batch_xs.shape[0]):
-					lengths.append(list(batch_xs[i, :]).index(END_IDX))
+				# lengths = []
+				# for i in range(batch_xs.shape[0]):
+					# lengths.append(list(batch_xs[i, :]).index(END_IDX))
 
-				lengths = torch.LongTensor(lengths)
-
-				lengths = torch.Tensor([MAX_LINE_LENGTH]*batch_xs.shape[0])
+				# lengths = torch.LongTensor(lengths)
+				lengths = (batch_xs==END_IDX).nonzero()[:, 1]
 				logp, mean, logv, z = model(batch_xs, lengths)
 
 				NLL_loss, KL_loss, KL_weight = self.loss_fn(logp, batch_ys, lengths, mean, logv, 'logistic', batch_idx, 0.0025, 2500)
