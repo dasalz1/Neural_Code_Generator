@@ -37,7 +37,7 @@ class Learner(nn.Module):
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
 
-		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.04)
+		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
 		self.model.to(self.device)
 		self.process_id = process_id
