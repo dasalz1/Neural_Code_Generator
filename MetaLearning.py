@@ -27,7 +27,11 @@ class Learner(nn.Module):
 
 		self.model = BartModel(model_params)
 		if load_model:
-			self.model.load_state_dict(torch.load('../checkpoint-bigseq2seqnaive.pth')['model'])
+			params = torch.load('../checkpoint-bigseq2seqnaive.pth')['model']
+			for k, v in params.items():
+				params[k[7:]] = v
+				del params[k]
+			self.model.load_state_dict(params)
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
