@@ -59,6 +59,8 @@ def main(args):
 									n_retrieved=args.n_retrieved, k_shot=args.k_shot, 
 									query_batch_size=args.query_batch_size)
 
+		if len(temp) > 3: data_loaders.append(iter(DataLoader(temp, shuffle=True, batch_size=1)))
+
 	for dataset in repo_files[:num_validation_repos]:
 		if args.meta_retrieve:
 			temp = MetaRetrieved(args.filepath+'/'+dataset, n_retrieved=args.n_retrieved)
