@@ -55,7 +55,7 @@ def main(args):
 		datasets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[num_validation_repos:]])
 		validsets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[:num_validation_repos]])
 	else:
-		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:60]])
+		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]])
 		validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]])
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

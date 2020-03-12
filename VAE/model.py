@@ -64,6 +64,7 @@ class SentenceVAE(nn.Module):
 
         packed_input = rnn_utils.pack_padded_sequence(input_embedding, sorted_lengths.data.tolist(), batch_first=True)
 
+        self.encoder_rnn.flatten_parameters
         _, hidden = self.encoder_rnn(packed_input)
 
         if self.bidirectional or self.num_layers > 1:
@@ -103,6 +104,7 @@ class SentenceVAE(nn.Module):
         packed_input = rnn_utils.pack_padded_sequence(input_embedding, sorted_lengths.data.tolist(), batch_first=True)
 
         # decoder forward pass
+        self.decoder_rnn.flatten_parameters()
         outputs, _ = self.decoder_rnn(packed_input, hidden)
 
         # process outputs

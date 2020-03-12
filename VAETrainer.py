@@ -67,7 +67,7 @@ class VAETrainer:
 				total_loss += loss.item()
 
 				if tb is not None and batch_idx % log_interval == 0:
-					tb_vae(tb, loss/log_interval, num_iter)
+					tb_vae(tb, loss/log_interval, batch_idx)
 					total_loss = 0.0
 
 				if batch_idx != 0 and batch_idx % checkpoint_interval == 0:
