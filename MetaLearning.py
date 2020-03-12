@@ -210,6 +210,13 @@ class MetaTrainer:
 		dist.init_process_group(self.backend, rank=process_id, world_size=self.world_size)
 		self.meta_learners[process_id](num_updates, data_queue, data_event, process_event, tb)
 
+	def load_next(self, task, num_tasks):
+		try:
+			task_data = next(data_loaders[task])
+			return task_data
+		except:
+			self.load_next(np.random.randint(0, num_tasks))
+
 	# dataloaders is list of the iterators of the dataloaders for each task
 	def train(self, data_loaders, tb=None, num_updates = 5):
 		data_queue = Queue()
@@ -236,11 +243,7 @@ class MetaTrainer:
 			tasks = np.random.randint(0, num_tasks, (self.world_size))
 			for task in tasks:
 				# place holder for sampling data from dataset
-				try:
-					task_data = next(data_loaders[task])
-				except:
-					tasks.append(np.random.randint(0, num_tasks))
-					continue
+				task_data = self.load_next(task, num_tasks)
 
 				# print(hey[0].shape)
 				data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
