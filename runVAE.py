@@ -2,7 +2,7 @@ from tensorboard_utils import Tensorboard
 from DataClass.torchData import *
 from DataClass.Constants import PAD_IDX, END_IDX, END_IDX, UNKNOWN_IDX, START_IDX
 from DataClass.torchData import MAX_LINE_LENGTH
-from SentenceVAE.model import *
+from VAE.model import *
 from VAETrainer import VAETrainer
 from torch.utils.data import ConcatDataset, DataLoader
 import torch
