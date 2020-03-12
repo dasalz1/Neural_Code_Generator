@@ -80,7 +80,7 @@ def main(args):
 	model = SentenceVAE(vocab_size=VOCAB_SIZE,
 					sos_idx = START_IDX, eos_idx=END_IDX, pad_idx = PAD_IDX, unk_idx = UNKNOWN_IDX,
 					max_sequence_length=MAX_LINE_LENGTH,
-					embedding_size=args.d_word_vec, rnn_type='gru',
+					embedding_size=args.d_word_vec, rnn_type='rnn',
 					hidden_size=args.inner_dimension, word_dropout=0.0,
 					embedding_dropout=0.5, latent_size=int(args.d_word_vec/2),
 					bidirectional=True)

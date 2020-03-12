@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.utils.rnn as rnn_utils
-from utils import *# to_var
+from VAE.utils import *# to_var
 from torch.autograd import Variable
 
 def to_var(x, volatile=False):

@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from DataClass.Constants import PAD_IDX, UNKNOWN_WORD, END_IDX
-from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_mle_epoch, tb_mle_batch, tb_bleu_validation_epoch
-from tqdm import tqdm
+from train_utils import save_checkpoint, from_checkpoint_if_exists, tb_vae
 import numpy as np
 import pandas as pd
 from DataClass.torchData import idx2word
