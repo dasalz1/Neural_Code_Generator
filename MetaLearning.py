@@ -236,7 +236,11 @@ class MetaTrainer:
 			tasks = np.random.randint(0, num_tasks, (self.world_size))
 			for task in tasks:
 				# place holder for sampling data from dataset
-				task_data = next(data_loaders[task])
+				try:
+					task_data = next(data_loaders[task])
+				except:
+					tasks.append(np.random.randint(0, num_tasks))
+					continue
 
 				# print(hey[0].shape)
 				data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
