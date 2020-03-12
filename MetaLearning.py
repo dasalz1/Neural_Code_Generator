@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(6e-4,), model_params=None, num_iters=25000, load_model=False):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-5,), model_params=None, num_iters=25000, load_model=False):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
