@@ -210,12 +210,14 @@ class MetaTrainer:
 		dist.init_process_group(self.backend, rank=process_id, world_size=self.world_size)
 		self.meta_learners[process_id](num_updates, data_queue, data_event, process_event, tb)
 
-	def load_next(self, task, num_tasks, data_loaders):
+	def load_next(self, task, data_loaders):
 		try:
 			task_data = next(data_loaders[task])
 			return task_data
 		except:
-			self.load_next(np.random.randint(0, num_tasks), num_tasks, data_loeaders)
+			del data_loaders[task]
+			self.num_tasks -= 1
+			return self.load_next(np.random.randint(0, self.num_tasks), self.num_tasks, data_loaders)
 
 	# dataloaders is list of the iterators of the dataloaders for each task
 	def train(self, data_loaders, tb=None, num_updates = 5):
@@ -226,8 +228,9 @@ class MetaTrainer:
 		process_event = Event()
 		# so doesn't hang on first iteration
 		process_event.set()
-		num_tasks = len(data_loaders)
-		print(num_tasks)
+		self.num_tasks = len(data_loaders)
+		m = self.num_tasks
+		# print(num_tasks)
 		processes = []
 		for process_id in range(self.world_size):
 			processes.append(Process(target=self.init_process, 
@@ -237,13 +240,14 @@ class MetaTrainer:
 			processes[-1].start()
 
 		for num_iter in tqdm(range(self.num_iters), mininterval=2, leave=False):
+			if num_iter == m: break
 			print("at the top of iter loop %d" % num_iter)
 			process_event.wait()
 			process_event.clear()
-			tasks = np.random.randint(0, num_tasks, (self.world_size))
-			for task in tasks:
+			tasks = np.random.randint(0, self.num_tasks, (self.world_size))
+			for task in revserse(sorted(tasks)):
 				# place holder for sampling data from dataset
-				task_data = self.load_next(task, num_tasks, data_loaders)
+				task_data = self.load_next(task, data_loaders)
 
 				# print(hey[0].shape)
 				data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 

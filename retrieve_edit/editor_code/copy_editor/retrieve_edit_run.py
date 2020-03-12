@@ -143,7 +143,7 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
             model = Editor(source_token_embedder, encoder, decoder_cell, vae_copy_len)
         else:
             model = Editor(source_token_embedder, encoder, decoder_cell, editor_copy_len)
-        model = try_gpu(model)
+        # model = try_gpu(model)
         return model
 
     @classmethod
@@ -185,7 +185,17 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
         ret_model = vae_model
         
         vae_ret_model = EditRetriever(vae_model, ret_model, edit_model)
-        vae_ret_model = try_gpu(vae_ret_model)
+        # vae_ret_model = try_gpu(vae_ret_model)
+        if torch.cuda.is_available:
+            torch.backends.cudnn.deterministic=True
+            torch.backends.cudnn.benchmark = False
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.device_count() > 1:
+            print("Using", torch.cuda.device_count(), "GPUs...")
+            vae_ret_model = torch.nn.DataParallel(vae_ret_model)
+        
+        vae_ret_model.to(device)
 
         optimizer = optim.Adam(vae_ret_model.parameters(), lr=optim_config.learning_rate)
         #optimizer = optim.SGD(vae_ret_model.parameters(), lr=optim_config.learning_rate)
