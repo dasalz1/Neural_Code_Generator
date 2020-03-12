@@ -21,3 +21,4 @@ checkpoint-ruleseq2seq.pth
 meta-predictions.txt
 rulebased_examples_second/.DS_Store
 rulebased_examples_first/.DS_Store
+SentenceVAE/

@@ -201,7 +201,7 @@ class MetaTrainer:
 
 		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters, load_model=load_model) for process_id in range(world_size)]
 		# gpu backend instead of gloo
-		self.backend = "nccl"
+		self.backend = "gloo"#nccl"
 		self.num_iters = num_iters
 		
 	def init_process(self, process_id, data_queue, data_event, process_event, num_updates, tb, address='localhost', port='29500'):
@@ -245,11 +245,11 @@ class MetaTrainer:
 			process_event.wait()
 			process_event.clear()
 			tasks = np.random.randint(0, self.num_tasks, (self.world_size))
-			for task in revserse(sorted(tasks)):
+			for task in sorted(tasks)[::-1]:
 				# place holder for sampling data from dataset
 				task_data = self.load_next(task, data_loaders)
 
-				# print(hey[0].shape)
+				# print(hey[0].shape)	
 				data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
 								task_data[2].numpy()[0], task_data[3].numpy()[0]))
 				
