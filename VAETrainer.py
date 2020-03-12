@@ -8,7 +8,7 @@ import pandas as pd
 from DataClass.torchData import idx2word
 from DataClass.torchData import MAX_LINE_LENGTH
 from copy import deepcopy
-
+from tqdm import tqdm
 
 NLL = torch.nn.NLLLoss(size_average=False, ignore_index=PAD_IDX)
 
