@@ -28,7 +28,8 @@ class Learner(nn.Module):
 		self.model = BartModel(model_params)
 		if load_model:
 			params = torch.load('../checkpoint-bigseq2seqnaive.pth')['model']
-			for k, v in params.items():
+			k, v = zip(*params.items())
+			for k, v in zip(k, v):
 				params[k[7:]] = v
 				del params[k]
 			self.model.load_state_dict(params)
