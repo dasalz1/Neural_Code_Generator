@@ -94,10 +94,15 @@ def main(args):
 		# model = torch.nn.DataParallel(model)
 	
 	model.to(device)
+	checkpoint = torch.load("checkpoint-vae-120000.pth")
+    
+    model.load_state_dict(checkpoint['model'])
 
 	trainer = VAETrainer(device)
 
 	# trainer.train(model, data_loader, validation_loader, tb=tb, epochs=args.epochs)
+
+	
 
 	all_repos = [(DataLoader(PairDataset(args.filepath +'/'+dataset), batch_size=args.batch_size, collate_fn=batch_collate_fn, num_workers=64), args.filepath, dataset) for dataset in repo_files[num_validation_repos:]]
 
