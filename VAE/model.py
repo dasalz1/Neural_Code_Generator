@@ -53,7 +53,7 @@ class SentenceVAE(nn.Module):
         self.latent2hidden = nn.Linear(latent_size, hidden_size * self.hidden_factor)
         self.outputs2vocab = nn.Linear(hidden_size * (2 if bidirectional else 1), vocab_size)
 
-    def forward(self, input_sequence, length):
+    def forward(self, input_sequence, length, only_enc=False):
 
         batch_size = input_sequence.size(0)
         sorted_lengths, sorted_idx = torch.sort(length, descending=True)
@@ -80,7 +80,8 @@ class SentenceVAE(nn.Module):
 
         z = to_var(torch.randn([batch_size, self.latent_size]))
         z = z * std + mean
-
+        if only_enc:
+            return z
         # DECODER
         hidden = self.latent2hidden(z)
 
