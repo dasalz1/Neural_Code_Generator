@@ -104,20 +104,20 @@ class VAETrainer:
 	def create_files(self, model, files, threading=False):
 		model.eval()
 		with torch.no_grad():
-		MAX_THREADS = 30
-		if threading:
-			threads = []; total_threads = [0]
-			for dataset, path, file in tqdm(files, mininterval=2, leave=False):
-				while(total_threads[0] >= MAX_THREADS): continue
-				total_threads[0] = total_threads[0] + 1
-				threads.append(Thread(target=self._create_file, args=(model, dataset, path, file, total_threads,)))
-				threads[-1].start()
+			MAX_THREADS = 30
+			if threading:
+				threads = []; total_threads = [0]
+				for dataset, path, file in tqdm(files, mininterval=2, leave=False):
+					while(total_threads[0] >= MAX_THREADS): continue
+					total_threads[0] = total_threads[0] + 1
+					threads.append(Thread(target=self._create_file, args=(model, dataset, path, file, total_threads,)))
+					threads[-1].start()
 
-			for t in threads:
-				t.join()
-		else:
-			for dataset, path, file in tqdm(files, mininterval=2, leave=False):
-				self._create_file(model, dataset, path, file, [0])
+				for t in threads:
+					t.join()
+			else:
+				for dataset, path, file in tqdm(files, mininterval=2, leave=False):
+					self._create_file(model, dataset, path, file, [0])
 
 
 
