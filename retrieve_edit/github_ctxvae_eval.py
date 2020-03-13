@@ -5,7 +5,7 @@ import os
 
 #os.environ['COPY_EDIT_DATA'] = paths.data_dir
 os.environ['COPY_EDIT_DATA']='./data/'
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 import sys
@@ -41,8 +41,8 @@ print os.environ['COPY_EDIT_DATA']
 profile = False
 
 # config = Config.from_file('editor_code/configs/editor/github.txt')
-config = Config.from_file('editor_code/configs/editor/github.txt')
-src_dir = os.environ['COPY_EDIT_DATA']+'edit_runs/0' #for codalab
+config = Config.from_file('editor_code/configs/editor/default.txt')
+src_dir = os.environ['COPY_EDIT_DATA']+'edit_runs/11' #for codalab
 load_expt = RetrieveEditTrainingRun(config, src_dir)
 
 import numpy as np
@@ -64,9 +64,11 @@ for batch in tqdm(chunks(examples.train,32), total=len(examples.train)/32):
 
 new_lsh = ret_model.make_lsh(new_vecs)
 
-eval_num = 500
-valid_eval = ret_model.ret_and_make_ex(examples.test[0:eval_num], new_lsh, examples.train, 0, train_mode=False)
-beam_list, edit_traces = edit_model.edit(valid_eval)
+# eval_num = 500
+eval_num = 50
+# start at indexes neighbor at top k
+valid_eval = ret_model.ret_and_make_ex(examples.train[0:eval_num], new_lsh, examples.train, startat = 0, train_mode=False) # valid_eval is list of EditExample where input_words is a list of [x, x', y']
+# beam_list, edit_traces = edit_model.edit(valid_eval)
 
 import numpy as np
 def eval_batch_noret(ex):
@@ -114,7 +116,10 @@ def eval_batch_ret(ex):
     idx_lists = []
     for k in range(len(ex)):
         hcdv = HardCopyDynamicVocab(base_vocab, valid_eval[k].input_words, edit_model.copy_lens)
-        copy_tok_list = [hcdv.word_to_copy_token.get(tok,base_vocab.UNK) for tok in valid_eval[k].input_words[6]]
+        # copy_tok_list = [hcdv.word_to_copy_token.get(tok,base_vocab.UNK) for tok in valid_eval[k].input_words[6]]
+        ############
+        copy_tok_list = [hcdv.word_to_copy_token.get(tok,base_vocab.UNK) for tok in valid_eval[k].input_words[-1]] # here we retrieve (y') from valid_example which we want to retrieve
+        ############
         copy_tok_id = [hcdv.word2index(tok) for tok in copy_tok_list]
         idx_lists.append(copy_tok_id)
     ret_mix_pr = 0.0
@@ -175,7 +180,9 @@ for i in range(eval_num):
 
 all_ranks_ret = []
 for i in range(eval_num):
-    all_ranks_ret.append(agree_vec(examples.test[i].target_words, valid_eval[i].input_words[6]))
+    # all_ranks_ret.append(agree_vec(examples.test[i].target_words, valid_eval[i].input_words[6]))
+    all_ranks_ret.append(agree_vec(examples.test[i].target_words, valid_eval[i].input_words[-1]))
+
 
 ####
 # eval code

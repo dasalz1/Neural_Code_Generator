@@ -92,10 +92,22 @@ class VAERetriever(Module):
     def make_editexamples(self, proto_list, edit_list):
         example_list = []
         for i in range(len(proto_list)):
-            el = EditExample(edit_list[i].input_words + proto_list[i].input_words + [proto_list[i].target_words],
-                             edit_list[i].target_words)
+            el = EditExample(edit_list[0].input_words + proto_list[i].input_words + [proto_list[i].target_words],
+                             edit_list[0].target_words)
             example_list.append(el)
         return example_list
+
+    def ret_and_make_ex_one(self, input, lsh, ex_list, startat, endat, train_mode = True):
+        # test
+        # ret_list = []
+        # for batch in chunks(input, 128):
+        idxlist = self.ret_idx([input], lsh, train_mode=train_mode)
+        ret_list = []
+        for idx in idxlist:
+            for i in range(startat, endat):
+                ret_list.append(ex_list[idx[i]])
+        # ret_list = [ex_list[idx[i]] for idx in idxlist for i in range(startat, endat)]
+        return self.make_editexamples(ret_list, [input])
 
     ####
     # Editor code (identical to editor)

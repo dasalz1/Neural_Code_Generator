@@ -17,6 +17,7 @@ from gtd.text import word_to_forms
 from gtd.utils import chunks, UnicodeMixin, flatten
 from gtd.ml.torch.seq_batch import SequenceBatch
 
+from nltk import word_tokenize
 
 class EditExample(namedtuple('EditExample', ['input_words', 'target_words']), UnicodeMixin):
     """
@@ -381,14 +382,23 @@ class EditTrace(UnicodeMixin):
                 #w_lower = w.lower()
                 copy_idx_str = str(copy_idx(word_to_copy[w])) if w in word_to_copy else '?'
                 in_base_str = '' if w in base_vocab else '*'
-                v = u'{}[{}]{}'.format(w, copy_idx_str, in_base_str)
+                try:
+                    v = u'{}[{}]{}'.format(w.decode('utf-8', 'ignore'), copy_idx_str.decode('utf-8', 'ignore'), in_base_str.decode('utf-8', 'ignore'))
+                except:
+                    print 'ran into error skipping ...'
+                    v = u''
                 new_tokens.append(v)
             return u' '.join(new_tokens)
-
-        example_str = u'INPUT:\n{}\nTARGET: {}'.format('\n'.join([render(words) for words in ex.input_words]),
-                                                       render(ex.target_words))
-        return u'\n'.join([example_str, indent(unicode(self.decoder_trace))])
-
+        try:
+            example_str = u'INPUT:\n{}\nTARGET: {}'.format('\n'.join([render(words) for words in ex.input_words]),
+                                                           render(ex.target_words))
+        except:
+            example_str = u'INPUT:\n{}\nTARGET: {}'.format('\n'.join([render(words) for words in ex.input_words]),
+                                                           render(ex.target_words))
+        try:
+            return u'\n'.join([example_str, indent(unicode(self.decoder_trace))])
+        except:
+            return '\n'.join([example_str, indent(unicode(self.decoder_trace))])
 
 class LossTrace(UnicodeMixin):
     def __init__(self, example, losses, vocab):
@@ -406,5 +416,14 @@ class LossTrace(UnicodeMixin):
 
     def __unicode__(self):
         _, output_words = decoder_inputs_and_outputs(self.example.target_words, self.vocab)
-        tokens = [u'{}({})'.format(token, round(loss, 2)) for token, loss in zip(output_words, self.losses)]
+        tokens = []
+        for token, loss in zip(output_words, self.losses):
+            try:
+                x = u'{}({})'.format(token, round(loss, 2))
+                tokens.append(x)
+            except:
+                print 'Error during for : '
+                # print token , round(loss, 2)
+
+        # tokens = [u'{}({})'.format(token, round(loss, 2)) for token, loss in zip(output_words, self.losses)]
         return u' '.join(tokens)

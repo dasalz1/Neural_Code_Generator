@@ -1,8 +1,8 @@
 optim {
     seed = 0  # random seed
     learning_rate = 0.001
-    batch_size = 16 # examples per batch
-    max_iters = 4000  # max number of mini-batch steps to take
+    batch_size = 32 # examples per batch
+    max_iters = 100000  # max number of mini-batch steps to take
 }
 
 eval {
@@ -12,7 +12,7 @@ eval {
 
 timing {
     eval_small = 100
-    eval_big = 1000
+    eval_big = 100
 }
 
 model {

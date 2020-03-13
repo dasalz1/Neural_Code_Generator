@@ -268,9 +268,12 @@ class ContextVAETrainingRun(TorchTrainingRun):
         def remove_punct(s):
             new_s = []
             for t in s:
-                t = unicode(t).translate(punct_table)
-                if t != '':
-                    new_s.append(t)
+                try:
+                    t = unicode(t).translate(punct_table)
+                    if t != '':
+                        new_s.append(t)
+                except:
+                    print 'encountered special unicode block {}. skipping'.format(t)
             return new_s
 
         metrics = {

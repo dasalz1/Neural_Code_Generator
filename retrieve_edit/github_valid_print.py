@@ -4,7 +4,7 @@ import paths
 import os
 
 #os.environ['COPY_EDIT_DATA'] = paths.data_dir
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 import sys
@@ -40,11 +40,11 @@ print os.environ['COPY_EDIT_DATA']
 # no-profile
 profile = False
 
-config = Config.from_file('editor_code/configs/editor/github.txt')
+config = Config.from_file('editor_code/configs/editor/default.txt')
 
-src_dir_noret = os.environ['COPY_EDIT_DATA']+'/edit_runs/1' #for codalab
+src_dir_noret = os.environ['COPY_EDIT_DATA']+'/edit_runs/11' #for codalab
 load_expt_noret = EditTrainingRun(config, src_dir_noret)
-src_dir = os.environ['COPY_EDIT_DATA']+'/edit_runs/0' #for codalab
+src_dir = os.environ['COPY_EDIT_DATA']+'/edit_runs/11' #for codalab
 load_expt = RetrieveEditTrainingRun(config, src_dir)
 
 ###
