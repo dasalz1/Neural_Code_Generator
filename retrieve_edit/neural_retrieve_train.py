@@ -1,20 +1,25 @@
 import paths
 import os
 os.environ['COPY_EDIT_DATA']='./data/'
-os.environ['CUDA_VISIBLE_DEVICES']='2'
+os.environ['CUDA_VISIBLE_DEVICES']='0'
 from gtd.utils import Config
 
-from editor_code.copy_editor.retrieve_edit_run import RetrieveEditTrainingRuns
-print(os.environ['COPY_EDIT_DATA'])
-import sys
+from editor_code.copy_editor.retrieve_edit_run import RetrieveEditTrainingRuns, RetrieveEditTrainingRun
+print os.environ['COPY_EDIT_DATA']
+import sys, pathlib2
 
 #no-profile
 profile=False
 
-runs = RetrieveEditTrainingRuns()
+src_dir = os.environ['COPY_EDIT_DATA']+'/edit_runs/7' #for codalab
+# load_expt = RetrieveEditTrainingRun(config, src_dir)
+# runs = RetrieveEditTrainingRuns()
+
 config_file = 'default.txt'
 config = Config.from_file('editor_code/configs/editor/'+config_file)
-run = runs.new(config)
+run = RetrieveEditTrainingRun(config, src_dir)
+
+# run = runs.new(config)
 
 if profile:
     from gtd.chrono import Profiling, Profiler

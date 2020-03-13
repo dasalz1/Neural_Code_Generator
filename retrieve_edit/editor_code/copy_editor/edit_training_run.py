@@ -9,7 +9,7 @@ import numpy as np
 import torch.optim as optim
 import unicodedata
 import sys
-
+from tqdm import tqdm
 from editor_code.copy_editor import data
 from editor_code.copy_editor.attention_decoder import AttentionDecoderCell
 from editor_code.copy_editor.editor import EditExample, Editor
@@ -126,7 +126,7 @@ class EditDataSplits(object):
             examples = {}
             MAX_LINE_LENGTH = 128
             name = '{}.pickle'.format(fname)
-            # file = pathlib2.Path.cwd() / 'github_data' / 'processed_repos' / name
+            file = pathlib2.Path.cwd() / 'github_data' / 'processed_repo_pkl' / name
             # if os.path.exists(str(file)):
             #     with open(str(file), 'rb') as f:
             #         examples = pickle.load(f)
@@ -135,7 +135,7 @@ class EditDataSplits(object):
             # count total lines before loading
             num_direct = len(data_paths)
             for line in verboserate(data_paths, desc='Reading data file.', total=num_direct):
-                df = pd.read_csv(line, skiprows= 0, header = None, names = [0, 1], dtype=str).fillna(NO_CONTEXT_WORD)
+                df = pd.read_csv(line, skiprows= 2, header = None, names = [0, 1], dtype=str).fillna(NO_CONTEXT_WORD)
                 df[0] = df[0].apply(lambda x: tokenize_fine_grained(x))
                 # df[0] = df[0].apply(lambda x: preprocess_tokens(x, MAX_LINE_LENGTH))
                 df[1] = df[1].apply(lambda x: tokenize_fine_grained(x))
@@ -152,34 +152,69 @@ class EditDataSplits(object):
                     # if max_seq_length(ex) > seq_length_limit:
                     #     continue
                     ex = list(ifilterfalse(lambda x: max_seq_length(x) > seq_length_limit, ex))
-                    # examples[str(line).split('/')[-1]] = ex
-                    examples[str(line).split('/')[-1]] = ex
+                    # examples[(str(line).split('/')[-1], len(ex))] = ex
+                    file = pathlib2.Path.cwd() / 'github_data' / 'processed_repo_pkl' / fname
+                    result = {(str(line).split('/')[-1], len(ex)) : ex}
+                    k = str(line).split('/')[-1].split('.')[0]
+                    pick_obj = {(str(line).split('/')[-1], len(ex)): ex}
+                    obj_name = str(file / k) + '.pickle'
+                    with open(obj_name, 'wb') as f:
+                        pickle.dump(pick_obj, f)
+                    f.close()
                 except Exception as e:
                     print e
                     print 'bad formatting in file ' + str(line).split('/')[-1]
                     print line
-            name = '{}.pickle'.format(fname)
-            file = pathlib2.Path.cwd() / 'github_data' / 'processed_repos' / name
-            if not os.path.exists(str(file)):
-                with open(str(file), 'wb') as f:
-                    pickle.dump(examples, f)
-                f.close()
+            # name = '{}.pickle'.format(fname)
+            # file = pathlib2.Path.cwd() / 'github_data' / 'processed_repo_pkl' / name
+            # if fname == 'train':
+            # file = pathlib2.Path.cwd() / 'github_data' / 'processed_repo_pkl' / fname
+            # for k, v in tqdm(examples.items()):
+            #     obj_name = file / k[0].split('.')[0]
+            #     pick_obj = {k : v}
+            #     with open(str(obj_name), 'wb') as f:
+            #         pickle.dump(pick_obj, f)
+            #     f.close()
+            # else:
+            #     if not os.path.exists(str(file)):
+            #         with open(str(file), 'wb') as f:
+            #             pickle.dump(examples, f)
+            #         f.close()
             return list(examples.values())
 
-        data_path = pathlib2.Path.cwd() / 'github_data' / 'repo_files'
-        existing_files = [str(x) for x in data_path.iterdir() if '.csv' in str(x)]
-        # p = Pool(15)
-
-        self.train = examples_from_file(existing_files[:30], config.seq_max, 'train')
-        flatten = lambda l: [item for sublist in l for item in sublist]
-        self.train = flatten(self.train)
-        self.valid = examples_from_file(existing_files[30:50], config.seq_max, 'valid')
-        self.valid = flatten(self.valid)
-        self.test = examples_from_file(existing_files[50:70], float('inf'), 'test')
-        self.test = flatten(self.test)
+        # data_path = pathlib2.Path.cwd() / 'github_data' / 'repo_files'
+        # existing_files = [str(x) for x in data_path.iterdir() if '.csv' in str(x)]
+        # flatten = lambda l: [item for sublist in l for item in sublist]
+        # self.valid = examples_from_file(existing_files[:50], config.seq_max, 'valid')
+        # self.valid = flatten(self.valid)
+        # self.train = examples_from_file(existing_files[50:-50], config.seq_max, 'train')
+        # self.train = flatten(self.train)
+        # self.test = examples_from_file(existing_files[-50:], float('inf'), 'test')
+        # self.test = flatten(self.test)
+        # load pickled directory
+        data_dir = pathlib2.Path.cwd() / 'github_data' / 'processed_repo_pkl'
+        val_paths = list((data_dir / 'valid').glob('*.pickle'))
+        self.valid = self.flatten(self.load_pickled_dir(val_paths))
+        tr_paths = list((data_dir / 'train').glob('*.pickle'))[:10]
+        self.train = self.flatten(self.load_pickled_dir(tr_paths))
+        te_paths = list((data_dir / 'test').glob('*.pickle'))
+        self.test = self.flatten(self.load_pickled_dir(te_paths))
         # self.train = examples_from_file(join(data_dir, 'train.tsv'), config.seq_max)
         # self.valid = examples_from_file(join(data_dir, 'valid.tsv'), config.seq_max)
         # self.test = examples_from_file(join(data_dir, 'test.tsv'), float('inf'))  # evaluation should not skip examples
+
+    def flatten(self, l):
+        return [item for sublist in l for item in sublist]
+
+    def load_pickled_dir(self, pickle_dir):
+        list_of_ex = []
+        for pickle_path in tqdm(pickle_dir):
+            with open(str(pickle_path), 'rb') as f:
+                result = pickle.load(f)
+            f.close()
+            list_of_ex.append(list(result.values()))
+        list_of_ex = self.flatten(list_of_ex)
+        return list_of_ex
 
 
 class EditTrainingRun(TorchTrainingRun):
@@ -297,8 +332,8 @@ class EditTrainingRun(TorchTrainingRun):
                             self.evaluate(step, big_eval=False)
                             self.tb_logger.log_value('grad_norm', grad_norm, step)
                         if step % config.timing.eval_big == 0:
-                            # John: train_stats, valid_stats = self.evaluate(step, big_eval=True)
-                            train_stats, valid_stats = self.evaluate(step, big_eval=False)
+                            train_stats, valid_stats = self.evaluate(step, big_eval=True)
+                            # train_stats, valid_stats = self.evaluate(step, big_eval=False)
                             exact_match_score = valid_stats[('big', 'exact_match', 'valid')]
                             self.checkpoints.save(train_state)
                         if step >= config.optim.max_iters:

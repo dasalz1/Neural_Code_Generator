@@ -37,17 +37,6 @@ def from_checkpoint_if_exists(model, optimizer, optimizer_sparse=None, scheduler
     
     return epoch, model, optimizer, scheduler
 
-
-def tb_vae(tb, loss, num_iter):
-    tb.add_scalars(
-        {
-            "loss_vae_batch": loss,
-        },
-        group="vae_training",
-        sub_group="batch",
-        global_step=num_iter
-    )
-
 def tb_mle_meta_batch(tb, loss, acc, num_iter):
     tb.add_scalars(
         {

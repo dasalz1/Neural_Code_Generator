@@ -108,8 +108,8 @@ class SequenceBatch(namedtuple('SequenceBatch', ['values', 'mask']), NamedTupleL
                 except Exception as e:
                     print e
 
-        if values.shape == mask.shape:
-            print 'values neq mask'
+        # if values.shape == mask.shape:
+        #     print 'values neq mask'
 
         return SequenceBatch(GPUVariable(torch.from_numpy(values), volatile=volatile),
                              GPUVariable(torch.from_numpy(mask), volatile=volatile))

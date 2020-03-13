@@ -143,7 +143,7 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
             model = Editor(source_token_embedder, encoder, decoder_cell, vae_copy_len)
         else:
             model = Editor(source_token_embedder, encoder, decoder_cell, editor_copy_len)
-        # model = try_gpu(model)
+        model = try_gpu(model)
         return model
 
     @classmethod
@@ -169,7 +169,8 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
         #VAEretreiver
         vocab_dict = word_embeddings.vocab._word2index
         encoder = Encoder(word_dim, model_config.agenda_dim, model_config.hidden_dim,
-                          model_config.encoder_layers, len(data_config.source_cols), model_config.encoder_dropout_prob, use_vae = True, kappa = model_config.vae_kappa, use_target=False)
+                          model_config.encoder_layers, len(data_config.source_cols), model_config.encoder_dropout_prob,
+                          use_vae = True, kappa = model_config.vae_kappa, use_target=False)
         source_token_embedder = TokenEmbedder(word_embeddings, model_config.train_source_embeds)
         target_token_embedder = TokenEmbedder(word_embeddings, model_config.train_target_embeds)
         ret_copy_len = [5, 10, 165]
@@ -185,17 +186,7 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
         ret_model = vae_model
         
         vae_ret_model = EditRetriever(vae_model, ret_model, edit_model)
-        # vae_ret_model = try_gpu(vae_ret_model)
-        if torch.cuda.is_available:
-            torch.backends.cudnn.deterministic=True
-            torch.backends.cudnn.benchmark = False
-
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if torch.cuda.device_count() > 1:
-            print("Using", torch.cuda.device_count(), "GPUs...")
-            vae_ret_model = torch.nn.DataParallel(vae_ret_model)
-        
-        vae_ret_model.to(device)
+        vae_ret_model = try_gpu(vae_ret_model)
 
         optimizer = optim.Adam(vae_ret_model.parameters(), lr=optim_config.learning_rate)
         #optimizer = optim.SGD(vae_ret_model.parameters(), lr=optim_config.learning_rate)
@@ -209,30 +200,12 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
         config = self.config
         workspace = self.workspace
 
-        vae_editor = train_state.model.vae_model
+        vae_editor = train_state.model.vae_model ##### vae_model = vae_editor = ret_model (VAERetriever)
         ret_model = train_state.model.ret_model
         edit_model = train_state.model.edit_model
         train_batches = similar_size_batches(examples.train, config.optim.batch_size)
 
         vae_editor.test_batch(train_batches[0])
-
-        # data_path = pathlib2.Path.cwd() / 'github_data' / 'repo_files'
-        # existing_files = [str(x) for x in data_path.iterdir() if '.csv' in str(x)]
-        # num_validation_repos = 5
-        # max_repo = 15
-        # data_loader = DataLoader(ConcatDataset([PairDataset(dataset) for dataset in existing_files[num_validation_repos:max_repo]]),
-        #                                         batch_size=1,
-        #                                         shuffle=True,
-        #                                         collate_fn=batch_collate_fn, num_workers = 0)
-        #
-        # valid_loader = DataLoader(ConcatDataset([PairDataset(dataset) for dataset in existing_files[:num_validation_repos]]),
-        #                                         batch_size=1,
-        #                                         shuffle=True,
-        #                                         collate_fn=batch_collate_fn, num_workers = 0)
-
-        # editex = namedtuple('EditExample', ['input_words', 'target_words'])
-        # self._examples.train = data_loader
-        # self._examples.valid = valid_loader
 
         step = 0
         while step < config.optim.max_iters:
@@ -244,7 +217,6 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
                 self.check_gradnan(finite_grads, train_state, workspace)
                 step = train_state.train_steps
                 self.eval_and_save(vae_editor, step, train_state, config, grad_norm, examples.train, examples.valid)
-                # self.eval_and_save(vae_editor, step, train_state, config, grad_norm, data_loader, valid_loader)
                 if step >= config.optim.max_iters:
                     break
 
@@ -305,7 +277,7 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
             self.train_vae()
             lsh = self.setup_ret()
             self.lsh = lsh
-            self.train_edit(lsh,1)
+            # self.train_edit(lsh,1)
 
 
     def check_gradnan(self, finite_grads, train_state, workspace):
@@ -405,7 +377,11 @@ class RetrieveEditTrainingRun(TorchTrainingRun):
         def remove_punct(s):
             new_s = []
             for t in s:
-                t = unicode(t).translate(punct_table)
+                try:
+                    t = unicode(t).translate(punct_table)
+                except:
+                    print 'ran into error'
+                    t = ''
                 if t != '':
                     new_s.append(t)
             return new_s
