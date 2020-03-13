@@ -88,7 +88,7 @@ class VAETrainer:
 
 		all_samples = pd.read_csv(path+'/'+file)
 		new_repo = None
-		ne = NearestNeighbors(10)
+		ne = NearestNeighbors(10, n_jobs=64)
 		ne.fit(curr_repo)
 		neighbors = ne.kneighbors()[1]
 		for idx, row in enumerate(neighbors):
@@ -103,7 +103,7 @@ class VAETrainer:
 
 	def create_files(self, model, files, threading=False):
 		model.eval()
-		MAX_THREADS = 100
+		MAX_THREADS = 30
 		if threading:
 			threads = []; total_threads = [0]
 			for dataset, path, file in tqdm(files, mininterval=2, leave=False):
