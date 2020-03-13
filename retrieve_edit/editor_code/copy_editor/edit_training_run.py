@@ -193,11 +193,11 @@ class EditDataSplits(object):
         # self.test = flatten(self.test)
         # load pickled directory
         data_dir = pathlib2.Path.cwd() / 'github_data' / 'processed_repo_pkl'
-        val_paths = list((data_dir / 'valid').glob('*.pickle'))
+        val_paths = list((data_dir / 'valid').glob('*.pickle'))[:10]
         self.valid = self.flatten(self.load_pickled_dir(val_paths))
         tr_paths = list((data_dir / 'train').glob('*.pickle'))[:10]
         self.train = self.flatten(self.load_pickled_dir(tr_paths))
-        te_paths = list((data_dir / 'test').glob('*.pickle'))
+        te_paths = list((data_dir / 'test').glob('*.pickle'))[:10]
         self.test = self.flatten(self.load_pickled_dir(te_paths))
         # self.train = examples_from_file(join(data_dir, 'train.tsv'), config.seq_max)
         # self.valid = examples_from_file(join(data_dir, 'valid.tsv'), config.seq_max)
