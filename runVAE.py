@@ -51,12 +51,12 @@ def main(args):
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 	# shuffle(repo_files)
 
-	if args.use_retriever:
-		datasets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[num_validation_repos:]])
-		validsets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[:num_validation_repos]])
-	else:
-		datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]])
-		validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]])
+	# if args.use_retriever:
+	# 	datasets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[num_validation_repos:]])
+	# 	validsets = ConcatDataset([RetrieveDataset(args.filepath +'/'+dataset, args.n_retrieved) for dataset in repo_files[:num_validation_repos]])
+	# else:
+	# 	datasets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[num_validation_repos:]])
+	# 	validsets = ConcatDataset([PairDataset(args.filepath +'/'+dataset) for dataset in repo_files[:num_validation_repos]])
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -80,7 +80,7 @@ def main(args):
 	model = SentenceVAE(vocab_size=VOCAB_SIZE,
 					sos_idx = START_IDX, eos_idx=END_IDX, pad_idx = PAD_IDX, unk_idx = UNKNOWN_IDX,
 					max_sequence_length=MAX_LINE_LENGTH,
-					embedding_size=args.d_word_vec, rnn_type='rnn',
+					embedding_size=args.d_word_vec, rnn_type='gru',
 					hidden_size=args.hidden_dimension, word_dropout=0.0,
 					embedding_dropout=0.5, latent_size=16,
 					bidirectional=True)

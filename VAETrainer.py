@@ -103,6 +103,7 @@ class VAETrainer:
 
 	def create_files(self, model, files, threading=False):
 		model.eval()
+		with torch.no_grad():
 		MAX_THREADS = 30
 		if threading:
 			threads = []; total_threads = [0]
