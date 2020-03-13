@@ -82,8 +82,7 @@ class VAETrainer:
 			batch_xs, batch_ys = map(lambda x: x.to(self.device), batch)
 
 			lengths = (batch_xs==END_IDX).nonzero()[:, 1]
-			# encs = model(batch_xs, lengths, only_enc=True).to('cpu').numpy()
-			encs = np.random.rand(batch_xs.shape[0], 16)
+			encs = model(batch_xs, lengths, only_enc=True).to('cpu').numpy()
 			curr_repo = np.vstack([curr_repo, encs]) if curr_repo is not None else encs
 
 
@@ -103,8 +102,8 @@ class VAETrainer:
 		total_threads[0] = total_threads[0] - 1
 
 	def create_files(self, model, files, threading=False):
-		# model.eval()
-		MAX_THREADS = 10
+		model.eval()
+		MAX_THREADS = 100
 		if threading:
 			threads = []; total_threads = [0]
 			for dataset, path, file in tqdm(files, mininterval=2, leave=False):
