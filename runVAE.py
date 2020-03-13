@@ -60,22 +60,22 @@ def main(args):
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-	data_loader = DataLoader(datasets,
-							batch_size=args.batch_size,
-							shuffle=True,
-							collate_fn=batch_collate_fn,
-							num_workers=64)
+	# data_loader = DataLoader(datasets,
+	# 						batch_size=args.batch_size,
+	# 						shuffle=True,
+	# 						collate_fn=batch_collate_fn,
+	# 						num_workers=64)
 
-	print("Finished creating data loader")
+	# print("Finished creating data loader")
 
-	validation_loader = DataLoader(validsets,
-							batch_size=args.batch_size,
-							shuffle=True,
-							collate_fn=batch_collate_fn,
-							num_workers=64)
+	# validation_loader = DataLoader(validsets,
+	# 						batch_size=args.batch_size,
+	# 						shuffle=True,
+	# 						collate_fn=batch_collate_fn,
+	# 						num_workers=64)
 
-	print("Finished creating validation data loader")
-	num_iterations = len(data_loader)
+	# print("Finished creating validation data loader")
+	# num_iterations = len(data_loader)
 
 	model = SentenceVAE(vocab_size=VOCAB_SIZE,
 					sos_idx = START_IDX, eos_idx=END_IDX, pad_idx = PAD_IDX, unk_idx = UNKNOWN_IDX,
