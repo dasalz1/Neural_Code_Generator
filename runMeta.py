@@ -33,7 +33,7 @@ parser.add_argument("--query_batch_size", default=10, type=int)
 parser.add_argument("--retrieve_context", default=False, action='store_true')
 parser.add_argument("--load_model", default=False, action='store_true')
 parser.add_argument("--n_retrieved", default=1, type=int)
-parser.add_argument("--num_iters", default=25000, type=int)
+parser.add_argument("--num_iters", default=100000, type=int)
 args = parser.parse_args()
 
 def main(args):
@@ -60,8 +60,8 @@ def main(args):
 									query_batch_size=args.query_batch_size)
 
 		if len(temp) > 3: 
-			for i in range(10): 
-				data_loaders.append(iter(DataLoader(temp, shuffle=True, batch_size=1)))
+			# for i in range(10): 
+			data_loaders.append(iter(DataLoader(temp, shuffle=True, batch_size=1)))
 
 	for dataset in repo_files[:num_validation_repos]:
 		if args.meta_retrieve:
