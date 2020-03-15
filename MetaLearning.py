@@ -36,7 +36,7 @@ class Learner(nn.Module):
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
-			os.nice(-19)
+			# os.nice(-19)
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
@@ -137,8 +137,8 @@ class Learner(nn.Module):
 		n_word_total = 0.0
 		n_word_correct = 0.0
 		total_loss = 0.0
+		data_event.wait()
 		while(True):
-			data_event.wait()
 			data = data_queue.get()
 			dist.barrier(async_op=True)
 
@@ -196,6 +196,8 @@ class Learner(nn.Module):
 				self._write_grads(original_state_dict, all_grads, (query_x, query_y))
 				process_event.set()
 
+			data_event.wait()
+
 
 class MetaTrainer:
 
@@ -240,6 +242,8 @@ class MetaTrainer:
 												args=(process_id, data_queue, data_event, 
 													process_event, num_updates, 
 													tb if process_id == 0 else None)))
+
+
 			processes[-1].start()
 
 		for num_iter in tqdm(range(self.num_iters), mininterval=2, leave=False):
