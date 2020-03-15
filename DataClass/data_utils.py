@@ -65,10 +65,7 @@ def fix_quote_strings_context(v, n):
     values.append(check_quote_str(v[:-1]))
     return [values]
 
-def create_vocab_dictionary(path, file, save=True, filter_count=500):
-    if os.path.exists(path+'/word2idx_tokens.pickle'):
-        return pickle.load(open(path+'/word2idx_tokens.pickle', 'rb')), pickle.load(open(path+'/idx2word_tokens.pickle', 'rb'))
-
+def create_vocab_dictionary(path, file, save=False, filter_count=4500):
     tokens_dict = pickle.load(open(path+'/'+file, 'rb'))
     idx2word = {}
     word2idx = {}

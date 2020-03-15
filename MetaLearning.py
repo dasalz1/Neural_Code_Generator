@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-4,), model_params=None, num_iters=25000, load_model=False):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-6,), model_params=None, num_iters=100000, load_model=False):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
@@ -38,7 +38,7 @@ class Learner(nn.Module):
 			self.optimizer = optimizer(*optim_params)
 			# os.nice(-19)
 
-		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
+		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.04)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
 		self.model.to(self.device)
 		self.process_id = process_id
@@ -57,7 +57,7 @@ class Learner(nn.Module):
 		with open('meta-predictions.txt', 'a') as f:
 			f.write("On iteration %d" % self.num_iter)
 			f.write("The support here\n")
-			f.write(str(support_x_pred))
+			f.write(str(support_x_pred[0]))
 			f.write("\n")
 			f.write("One of the queries\n")
 			f.write(str(trg_words[0]))
