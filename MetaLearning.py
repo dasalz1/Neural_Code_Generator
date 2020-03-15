@@ -106,27 +106,27 @@ class Learner(nn.Module):
 
 	def _write_grads(self, original_state_dict, all_grads, temp_data):
 		# reload original model before taking meta-gradients
-		print(" ")
+		# print(" ")
 		self.model.load_state_dict(original_state_dict)
-		print(" ")
+		# print(" ")
 		self.model.to(self.device)
 		self.model.train()
 
 		self.optimizer.zero_grad()
 		dummy_query_x, dummy_query_y = temp_data
-		print(" ")
+		# print(" ")
 		pred_logits = self.model(input_ids=dummy_query_x, decoder_input_ids=dummy_query_y[:, :-1])
 		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
 		dummy_loss, _, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
-		print(" ")
+		# print(" ")
 		# dummy_loss, _ = self.model(temp_data)
 		hooks = self._hook_grads(all_grads)
 		dummy_loss.backward()
-		print(" ")
+		# print(" ")
 		torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 		
 		self.optimizer.step()
-		print("did optimzier step")
+		# print("did optimzier step")
 		# gpu memory explodes if you dont remove hooks
 		for h in hooks:
 			h.remove()
