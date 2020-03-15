@@ -131,8 +131,6 @@ class Learner(nn.Module):
 		for h in hooks:
 			h.remove()
 
-		print("finished meta")
-
 	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=25, checkpoint_interval=250):
 		n_word_total = 0.0
 		n_word_correct = 0.0
@@ -248,7 +246,6 @@ class MetaTrainer:
 
 		for num_iter in tqdm(range(self.num_iters), mininterval=2, leave=False):
 			if num_iter == m: break
-			print("at the top of iter loop %d" % num_iter)
 			process_event.wait()
 			process_event.clear()
 			tasks = np.random.randint(0, self.num_tasks, (self.world_size))
