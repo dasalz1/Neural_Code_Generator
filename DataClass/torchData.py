@@ -53,7 +53,7 @@ class PairDataset(Dataset):
         x_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in x_tokens]
         y_tokens = [word2idx.get(token, UNKNOWN_IDX) for token in y_tokens]
         
-        return x_tokens, y_tokens
+        return x_tokens, y_tokens, idx
 
 class RetrieveDataset(Dataset):
 
@@ -108,7 +108,7 @@ class RetrieveDataset(Dataset):
     
 def batch_collate_fn(data):
         # data = list(filter(lambda z : z is not None, data))
-        x, y = zip(*data)
+        x, y, idx = zip(*data)
         
         x = pd.DataFrame(x).values.astype('int64')
         y = pd.DataFrame(y).values.astype('int64')
@@ -118,7 +118,7 @@ def batch_collate_fn(data):
 
         batch_xs = torch.LongTensor(x)
         batch_ys = torch.LongTensor(y)
-        return batch_xs, batch_ys
+        return batch_xs, batch_ys, idx
     
     
 

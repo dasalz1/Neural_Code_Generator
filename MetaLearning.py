@@ -36,6 +36,7 @@ class Learner(nn.Module):
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)
+			os.nice(-19)
 
 		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.1)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
@@ -87,7 +88,7 @@ class Learner(nn.Module):
 		
 		loss = compute_loss(pred, target, smoothing)
 		pred_max = pred.max(1)[1]
-		target = target.contiguous().view(-1)
+		target = ta rget.contiguous().view(-1)
 		non_pad_mask = target.ne(PAD_IDX)
 		n_correct = pred_max.eq(target)
 		n_correct = n_correct.masked_select(non_pad_mask).sum().item()
