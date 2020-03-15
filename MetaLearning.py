@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-5,), model_params=None, num_iters=25000, load_model=False):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-4,), model_params=None, num_iters=25000, load_model=False):
 		super(Learner, self).__init__()
 
 		self.model = BartModel(model_params)
@@ -88,7 +88,7 @@ class Learner(nn.Module):
 		
 		loss = compute_loss(pred, target, smoothing)
 		pred_max = pred.max(1)[1]
-		target = ta rget.contiguous().view(-1)
+		target = target.contiguous().view(-1)
 		non_pad_mask = target.ne(PAD_IDX)
 		n_correct = pred_max.eq(target)
 		n_correct = n_correct.masked_select(non_pad_mask).sum().item()
