@@ -35,6 +35,10 @@ class FTBart(nn.Module):
 		out = self.final_proj(x)
 		return out
 
+	def parameters(self):
+		return list(self.meta_proj1.parameters()) + list(self.meta_proj2.parameters()) + list(self.final_proj.parameters())
+
+
 
 
 class Learner(nn.Module):
