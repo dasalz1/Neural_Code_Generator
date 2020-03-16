@@ -138,7 +138,7 @@ class Learner(nn.Module):
 		dummy_query_x, dummy_query_y = temp_data
 		# print(" ")
 		pred_logits = self.model(input_ids=dummy_query_x, decoder_input_ids=dummy_query_y[:, :-1])
-		pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
+		pred_logits = pred_logits.contiguous().view(-1, VOCAB_SIZE)
 		dummy_loss, _, _ = self.compute_mle_loss(pred_logits, dummy_query_y[:, 1:], smoothing=True)
 		# print(" ")
 		# dummy_loss, _ = self.model(temp_data)
@@ -184,14 +184,14 @@ class Learner(nn.Module):
 			for i in range(num_updates):
 				self.meta_optimizer.zero_grad()
 				pred_logits = self.model(input_ids=support_x, decoder_input_ids=support_y[:, :-1])
-				pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
+				pred_logits = pred_logits.contiguous().view(-1, VOCAB_SIZE)
 				loss, n_correct, _ = self.compute_mle_loss(pred_logits, support_y[:, 1:], smoothing=True)
 				loss.backward()
 				torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
 				self.meta_optimizer.step()
 
 			pred_logits = self.model(input_ids=query_x, decoder_input_ids=query_y[:, :-1])
-			pred_logits = pred_logits.contiguous().view(-1, pred_logits.size(2))
+			pred_logits = pred_logits.contiguous().view(-1, VOCAB_SIZE)
 			loss, n_correct, n_total = self.compute_mle_loss(pred_logits, query_y[:, 1:], smoothing=True)
 
 			n_word_total += n_total
