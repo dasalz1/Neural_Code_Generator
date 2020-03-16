@@ -22,7 +22,7 @@ class FTBart(nn.Module):
 	def __init__(self, bart_model):
 		super(FTBart, self).__init__()
 		self.bart_model = bart_model
-		for param in self.bart_model.features.parameters():
+		for param in self.bart_model.parameters():
 			param.requires_grad = False
 		self.meta_proj1 = nn.Linear(VOCAB_SIZE, 2048)
 		self.meta_proj2 = nn.Linear(2048, 2048)
