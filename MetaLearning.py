@@ -27,7 +27,8 @@ class FTBart(nn.Module):
 		self.bart_model = bart_model
 		for param in self.bart_model.parameters():
 			param.requires_grad = False
-		sefl.bart_model.decoder_proj.parameters().requires_grad=True
+		for param in self.bart_model.decoder_proj.parameters():
+			param.requires_grad=True
 
 		# self.meta_proj1 = self.bart_model.decoder_proj.clone().detach()
 		# self.final_proj = self.bart_model.decoder_proj.clone().detach()
