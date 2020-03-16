@@ -18,6 +18,23 @@ import os
 from copy import deepcopy
 from tqdm import tqdm
 
+class FTBart(nn.Module):
+	def __init__(self, BART):
+		self.BART = BART
+		for param in self.BART.features.parameters():
+			param.requires_grad = False
+		self.meta_proj1 = nn.Linear(VOCAB_SIZE, 2048)
+		self.meta_proj2 = nn.Linear(2048, 2048)
+		self.final_proj = nn.Linear(2048, VOCAB_SIZE)
+
+
+	def forward(self, x):
+		x = self.BART(x)
+		x = x.contiguous().view(-1, VOCAB_SIZE)
+		x = self.meta_proj2(self.meta_proj1(x))
+		out = self.final_proj(x)
+		return out
+
 
 
 class Learner(nn.Module):
@@ -25,14 +42,19 @@ class Learner(nn.Module):
 	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=torch.optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-6,), model_params=None, num_iters=100000, load_model=False):
 		super(Learner, self).__init__()
 
-		self.model = BartModel(model_params)
+		model = BartModel(model_params)
 		if load_model:
 			params = torch.load('../checkpoint-bigseq2seqnaive.pth')['model']
 			k, v = zip(*params.items())
 			for k, v in zip(k, v):
 				params[k[7:]] = v
 				del params[k]
-			self.model.load_state_dict(params)
+			model.load_state_dict(params)
+			# temp = nn.Linear(model
+			self.model = FTBart(model)
+		else:
+			self.model = model
+
 		if process_id == 0:
 			optim_params = (self.model.parameters(),) + optim_params
 			self.optimizer = optimizer(*optim_params)

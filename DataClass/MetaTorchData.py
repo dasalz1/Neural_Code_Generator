@@ -14,6 +14,7 @@ warnings.simplefilter('ignore', pd.errors.ParserWarning)
 
 
 word2idx, idx2word = create_vocab_dictionary(path='..', file='all_tokens.pickle', save=True)
+VOCAB_SIZE = len(word2idx)
 # word2idx, idx2word = create_vocab_dictionary(path='..', file='all_tokens.pickle', save=True)
 
 # UNKNOWN_IDX = word2idx[UNKNOWN_WORD]
