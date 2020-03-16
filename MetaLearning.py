@@ -19,7 +19,7 @@ from copy import deepcopy
 from tqdm import tqdm
 
 class FTBart(nn.Module):
-	def __init__(self, BART):
+	def __init__(self, bart_model):
 		super(FTBart, self).__init__()
 		self.bart_model = bart_model
 		for param in self.bart_model.features.parameters():
