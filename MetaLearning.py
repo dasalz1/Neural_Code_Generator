@@ -66,6 +66,7 @@ class Learner(nn.Module):
 			model.load_state_dict(params)
 			# temp = nn.Linear(model
 			self.model = FTBart(model)
+			optim_params = (1e-4,)
 		else:
 			self.model = model
 
