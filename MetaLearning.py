@@ -31,7 +31,6 @@ class FTBart(nn.Module):
 		# self.meta_proj1 = self.bart_model.decoder_proj.clone().detach()
 		# self.final_proj = self.bart_model.decoder_proj.clone().detach()
 		self.meta_proj1 = nn.Linear(VOCAB_SIZE, D_WORD_VEC)
-		self.meta_proj2 = nn.Linear(D_WORD_VEC, D_WORD_VEC)
 		self.final_proj = nn.Linear(D_WORD_VEC, VOCAB_SIZE)
 
 		self.meta_proj1.weight.data = self.bart_model.decoder_proj.weight.data.T
@@ -40,13 +39,13 @@ class FTBart(nn.Module):
 	def forward(self, input_ids, decoder_input_ids):
 		x = self.bart_model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 		x = x.contiguous().view(-1, VOCAB_SIZE)
-		x = self.meta_proj2(self.meta_proj1(x))
+		x = self.meta_proj1(x)
 		out = self.final_proj(x)
 		return out
 
 	def parameters(self):
-		return list(self.meta_proj1.parameters()) + list(self.meta_proj2.parameters()) + list(self.final_proj.parameters())
-		# return list(self.meta_proj1.parameters()) + list(self.final_proj.parameters())
+		# return list(self.meta_proj1.parameters()) + list(self.meta_proj2.parameters()) + list(self.final_proj.parameters())
+		return list(self.meta_proj1.parameters()) + list(self.final_proj.parameters())
 
 
 
@@ -66,7 +65,7 @@ class Learner(nn.Module):
 			model.load_state_dict(params)
 			# temp = nn.Linear(model
 			self.model = FTBart(model)
-			optim_params = (1e-4,)
+			optim_params = (1e-3,)
 		else:
 			self.model = model
 
