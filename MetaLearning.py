@@ -55,7 +55,7 @@ class FTBart(nn.Module):
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=torch.optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-6,), model_params=None, num_iters=100000, load_model=False):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3,), model_params=None, num_iters=100000, load_model=False):
 		super(Learner, self).__init__()
 		fine_tune = False
 		model = BartModel(model_params)
@@ -87,7 +87,7 @@ class Learner(nn.Module):
 			self.optimizer = optimizer(*optim_params)
 			# os.nice(-19)
 
-		self.meta_optimizer = optim.SGD(self.model.parameters(), 0.04)
+		self.meta_optimizer = optim.SGD(self.model.parameters(), 1e-4)
 		self.device='cuda:'+str(process_id) if gpu is not 'cpu' else gpu
 		self.model.to(self.device)
 		self.process_id = process_id
