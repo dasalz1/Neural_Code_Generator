@@ -57,7 +57,7 @@ class Learner(nn.Module):
 
 	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=torch.optim.Adam, optimizer_sparse=optim.SparseAdam, optim_params=(1e-6,), model_params=None, num_iters=100000, load_model=False):
 		super(Learner, self).__init__()
-
+		fine_tune = False
 		model = BartModel(model_params)
 		if load_model:
 			params = torch.load('../checkpoint-bigseq2seqnaive.pth')['model']
@@ -66,9 +66,19 @@ class Learner(nn.Module):
 				params[k[7:]] = v
 				del params[k]
 			model.load_state_dict(params)
+			self.model = model
+			optim_params = (1e-3,)
+		elif fine_tune:
+			params = torch.load('../checkpoint-bigseq2seqnaive.pth')['model']
+			k, v = zip(*params.items())
+			for k, v in zip(k, v):
+				params[k[7:]] = v
+				del params[k]
+			model.load_state_dict(params)
 			# temp = nn.Linear(model
-			self.model = model#FTBart(model)
-			optim_params = (1e-1,)
+			self.model = FTBart(model)
+			optim_params = (1e-3,)
+
 		else:
 			self.model = model
 
