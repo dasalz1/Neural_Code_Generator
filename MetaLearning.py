@@ -34,8 +34,8 @@ class FTBart(nn.Module):
 		self.meta_proj2 = nn.Linear(D_WORD_VEC, D_WORD_VEC)
 		self.final_proj = nn.Linear(D_WORD_VEC, VOCAB_SIZE)
 
-		self.meta_proj1.weight.data = self.bart_model.decoder_proj.weight.data
-		self.final_proj.weight.data = self.bart_model.decoder_proj.weight.data.T
+		self.meta_proj1.weight.data = self.bart_model.decoder_proj.weight.data.T
+		self.final_proj.weight.data = self.bart_model.decoder_proj.weight.data
 
 	def forward(self, input_ids, decoder_input_ids):
 		x = self.bart_model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
