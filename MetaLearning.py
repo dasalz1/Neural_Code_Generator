@@ -20,8 +20,9 @@ from tqdm import tqdm
 
 class FTBart(nn.Module):
 	def __init__(self, BART):
-		self.BART = BART
-		for param in self.BART.features.parameters():
+		super(FTBart, self).__init__()
+		self.bart_model = bart_model
+		for param in self.bart_model.features.parameters():
 			param.requires_grad = False
 		self.meta_proj1 = nn.Linear(VOCAB_SIZE, 2048)
 		self.meta_proj2 = nn.Linear(2048, 2048)
@@ -29,7 +30,7 @@ class FTBart(nn.Module):
 
 
 	def forward(self, x):
-		x = self.BART(x)
+		x = self.bart_model(x)
 		x = x.contiguous().view(-1, VOCAB_SIZE)
 		x = self.meta_proj2(self.meta_proj1(x))
 		out = self.final_proj(x)
