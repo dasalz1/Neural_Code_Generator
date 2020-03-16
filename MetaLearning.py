@@ -28,9 +28,8 @@ class FTBart(nn.Module):
 		self.meta_proj2 = nn.Linear(2048, 2048)
 		self.final_proj = nn.Linear(2048, VOCAB_SIZE)
 
-
-	def forward(self, x):
-		x = self.bart_model(x)
+	def forward(self, input_ids, decoder_input_ids):
+		x = self.bart_model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 		x = x.contiguous().view(-1, VOCAB_SIZE)
 		x = self.meta_proj2(self.meta_proj1(x))
 		out = self.final_proj(x)
