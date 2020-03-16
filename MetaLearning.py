@@ -24,19 +24,23 @@ class FTBart(nn.Module):
 		self.bart_model = bart_model
 		for param in self.bart_model.parameters():
 			param.requires_grad = False
-		self.meta_proj1 = nn.Linear(VOCAB_SIZE, 2048)
-		self.meta_proj2 = nn.Linear(2048, 2048)
-		self.final_proj = nn.Linear(2048, VOCAB_SIZE)
+
+		self.meta_proj1 = self.bart_model.self.decoder_proj.clone().detach()
+		self.final_proj = self.bart_model.self.decoder_proj.clone().detach()
+		# self.meta_proj1 = nn.Linear(VOCAB_SIZE, VOCAB_SIZE)
+		# self.meta_proj2 = nn.Linear(int(VOCAB_SIZE/10), VOCAB_SIZE)
+		# self.final_proj = nn.Linear(VOCAB_SIZE, VOCAB_SIZE)
 
 	def forward(self, input_ids, decoder_input_ids):
 		x = self.bart_model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 		x = x.contiguous().view(-1, VOCAB_SIZE)
-		x = self.meta_proj2(self.meta_proj1(x))
-		out = self.final_proj(x)
+		# x = self.meta_proj2(self.meta_proj1(x))
+		out = self.final_proj(self.meta_proj1(x))
 		return out
 
 	def parameters(self):
-		return list(self.meta_proj1.parameters()) + list(self.meta_proj2.parameters()) + list(self.final_proj.parameters())
+		# return list(self.meta_proj1.parameters()) + list(self.meta_proj2.parameters()) + list(self.final_proj.parameters())
+		return list(self.meta_proj1.parameters()) + list(self.final_proj.parameters())
 
 
 
