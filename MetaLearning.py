@@ -18,6 +18,9 @@ import os
 from copy import deepcopy
 from tqdm import tqdm
 
+
+D_WORD_VEC = 128
+
 class FTBart(nn.Module):
 	def __init__(self, bart_model):
 		super(FTBart, self).__init__()
@@ -25,22 +28,25 @@ class FTBart(nn.Module):
 		for param in self.bart_model.parameters():
 			param.requires_grad = False
 
-		self.meta_proj1 = self.bart_model.self.decoder_proj.clone().detach()
-		self.final_proj = self.bart_model.self.decoder_proj.clone().detach()
-		# self.meta_proj1 = nn.Linear(VOCAB_SIZE, VOCAB_SIZE)
-		# self.meta_proj2 = nn.Linear(int(VOCAB_SIZE/10), VOCAB_SIZE)
-		# self.final_proj = nn.Linear(VOCAB_SIZE, VOCAB_SIZE)
+		# self.meta_proj1 = self.bart_model.decoder_proj.clone().detach()
+		# self.final_proj = self.bart_model.decoder_proj.clone().detach()
+		self.meta_proj1 = nn.Linear(VOCAB_SIZE, D_WORD_VEC)
+		self.meta_proj2 = nn.Linear(D_WORD_VEC, D_WORD_VEC)
+		self.final_proj = nn.Linear(D_WORD_VEC, VOCAB_SIZE)
+
+		self.meta_proj1.weight.data = self.bart_model.decoder_proj.weight.data
+		self.final_proj.weight.data = self.bart_model.decoder_proj.weight.data.T
 
 	def forward(self, input_ids, decoder_input_ids):
 		x = self.bart_model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
 		x = x.contiguous().view(-1, VOCAB_SIZE)
-		# x = self.meta_proj2(self.meta_proj1(x))
-		out = self.final_proj(self.meta_proj1(x))
+		x = self.meta_proj2(self.meta_proj1(x))
+		out = self.final_proj(x)
 		return out
 
 	def parameters(self):
-		# return list(self.meta_proj1.parameters()) + list(self.meta_proj2.parameters()) + list(self.final_proj.parameters())
-		return list(self.meta_proj1.parameters()) + list(self.final_proj.parameters())
+		return list(self.meta_proj1.parameters()) + list(self.meta_proj2.parameters()) + list(self.final_proj.parameters())
+		# return list(self.meta_proj1.parameters()) + list(self.final_proj.parameters())
 
 
 
