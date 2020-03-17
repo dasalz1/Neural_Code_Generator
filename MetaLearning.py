@@ -253,7 +253,7 @@ class MetaTrainer:
 
 		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters, load_model=load_model) for process_id in range(world_size)]
 		# gpu backend instead of gloo
-		self.backend = "gloo"
+		self.backend = "nccl"#"gloo"
 		self.num_iters = num_iters
 		
 	def init_process(self, process_id, data_queue, data_event, process_event, num_updates, tb, address='localhost', port='29500'):
