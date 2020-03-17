@@ -55,7 +55,7 @@ class FTBart(nn.Module):
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-3,), model_params=None, num_iters=100000, load_model=False):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-5,), model_params=None, num_iters=100000, load_model=False):
 		super(Learner, self).__init__()
 		fine_tune = False
 		model = BartModel(model_params)
@@ -67,7 +67,7 @@ class Learner(nn.Module):
 				del params[k]
 			model.load_state_dict(params)
 			self.model = model
-			optim_params = (1e-3,)
+			optim_params = (1e-5,)
 		elif fine_tune:
 			params = torch.load('../checkpoint-bigseq2seqnaive.pth')['model']
 			k, v = zip(*params.items())
@@ -77,7 +77,7 @@ class Learner(nn.Module):
 			model.load_state_dict(params)
 			# temp = nn.Linear(model
 			self.model = FTBart(model)
-			optim_params = (1e-3,)
+			optim_params = (1e-5,)
 
 		else:
 			self.model = model
@@ -301,10 +301,14 @@ class MetaTrainer:
 			for task in sorted(tasks)[::-1]:
 				# place holder for sampling data from dataset
 				task_data = self.load_next(task, data_loaders)
-
+				try:
 				# print(hey[0].shape)	
-				data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
-								task_data[2].numpy()[0], task_data[3].numpy()[0]))
+					data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
+									task_data[2].numpy()[0], task_data[3].numpy()[0]))
+				except:
+					task_data = self.load_next(task, data_loaders)
+					data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
+									task_data[2].numpy()[0], task_data[3].numpy()[0]))
 				
 			data_event.set()
 
