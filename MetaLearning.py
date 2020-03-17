@@ -180,7 +180,7 @@ class Learner(nn.Module):
 		for h in hooks:
 			h.remove()
 
-	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=25, checkpoint_interval=250):
+	def forward(self, num_updates, data_queue, data_event, process_event, tb=None, log_interval=250, checkpoint_interval=1000):
 		n_word_total = 0.0
 		n_word_correct = 0.0
 		total_loss = 0.0
@@ -234,7 +234,7 @@ class Learner(nn.Module):
 
 			if self.process_id == 0 and tb is not None and self.num_iter % log_interval == 0 and self.num_iter != 0:
 				tb_mle_meta_batch(tb, total_loss/n_word_total, n_word_correct/n_word_total, self.num_iter)
-				n_word_total = 0.0; n_word_correct = 0.0; total_loss = 0.0
+				# n_word_total = 0.0; n_word_correct = 0.0; total_loss = 0.0
 				self._write_prediction(support_x, pred_logits, query_y)
 				
 
