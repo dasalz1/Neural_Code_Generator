@@ -243,7 +243,9 @@ class Learner(nn.Module):
 				self._write_grads(original_state_dict, all_grads, (query_x, query_y))
 				process_event.set()
 
+			process_event.wait()
 			data_event.wait()
+
 
 
 class MetaTrainer:
