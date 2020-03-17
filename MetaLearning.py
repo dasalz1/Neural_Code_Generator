@@ -189,7 +189,6 @@ class Learner(nn.Module):
 			data = data_queue.get()
 
 			if data is None: break
-
 			dist.barrier(async_op=True)
 
 			if self.process_id == 0: 
@@ -240,6 +239,7 @@ class Learner(nn.Module):
 				# n_word_total = 0.0; n_word_correct = 0.0; total_loss = 0.0
 				self._write_prediction(support_x, pred_logits, query_y)
 				
+
 			if self.process_id == 0:
 				self.num_iter += 1
 				self._write_grads(original_state_dict, all_grads, (query_x, query_y))
@@ -251,7 +251,7 @@ class Learner(nn.Module):
 
 class MetaTrainer:
 
-	def __init__(self, world_size, device='cpu', model_params=None, num_iters=100000, load_model=False):
+	def __init__(self, world_size, device='cpu', model_params=None, num_iters=25000, load_model=False):
 		self.world_size = world_size
 
 		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters, load_model=load_model) for process_id in range(world_size)]
@@ -276,49 +276,47 @@ class MetaTrainer:
 
 	# dataloaders is list of the iterators of the dataloaders for each task
 	def train(self, data_loaders, tb=None, num_updates = 5):
-		for i in range(20):
-			data_queue = Queue()
-			# for notifying when to recieve data
-			data_event = Event()
-			# for notifying this method when to send new data
-			process_event = Event()
-			# so doesn't hang on first iteration
-			process_event.set()
-			self.num_tasks = len(data_loaders)
-			m = self.num_tasks
-			# print(num_tasks)
-			processes = []
-			for process_id in range(self.world_size):
-				processes.append(Process(target=self.init_process, 
-													args=(process_id, data_queue, data_event, 
-														process_event, num_updates, 
-														tb if process_id == 0 else None)))
+		data_queue = Queue()
+		# for notifying when to recieve data
+		data_event = Event()
+		# for notifying this method when to send new data
+		process_event = Event()
+		# so doesn't hang on first iteration
+		process_event.set()
+		self.num_tasks = len(data_loaders)
+		m = self.num_tasks
+		# print(num_tasks)
+		processes = []
+		for process_id in range(self.world_size):
+			processes.append(Process(target=self.init_process, 
+												args=(process_id, data_queue, data_event, 
+													process_event, num_updates, 
+													tb if process_id == 0 else None)))
 
 
-				processes[-1].start()
+			processes[-1].start()
 
-			for num_iter in tqdm(range(int(self.num_iters/20)), mininterval=2, leave=False):
-				if num_iter == m: break
-				process_event.wait()
-				process_event.clear()
-				tasks = np.random.randint(0, self.num_tasks, (self.world_size))
-				for task in sorted(tasks)[::-1]:
-					# place holder for sampling data from dataset
+		for num_iter in tqdm(range(self.num_iters), mininterval=2, leave=False):
+			process_event.wait()
+			process_event.clear()
+			tasks = np.random.randint(0, self.num_tasks, (self.world_size))
+			for task in sorted(tasks)[::-1]:
+				# place holder for sampling data from dataset
+				task_data = self.load_next(task, data_loaders)
+				try:
+				# print(hey[0].shape)	
+					data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
+									task_data[2].numpy()[0], task_data[3].numpy()[0]))
+				except:
 					task_data = self.load_next(task, data_loaders)
-					try:
-					# print(hey[0].shape)	
-						data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
-										task_data[2].numpy()[0], task_data[3].numpy()[0]))
-					except:
-						task_data = self.load_next(task, data_loaders)
-						data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
-										task_data[2].numpy()[0], task_data[3].numpy()[0]))
-					
-				data_event.set()
+					data_queue.put((task_data[0].numpy()[0], task_data[1].numpy()[0], 
+									task_data[2].numpy()[0], task_data[3].numpy()[0]))
+				
+			data_event.set()
 
-			for i in range(self.world_size):
-				data_queue.put(None)
+		for i in range(self.world_size):
+			data_queue.put(None)
 
-			for p in processes:
-				p.terminate()
-				p.join()
+		for p in processes:
+			p.terminate()
+			p.join()
