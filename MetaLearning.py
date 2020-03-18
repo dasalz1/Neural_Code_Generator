@@ -27,7 +27,8 @@ class FTBart(nn.Module):
 		self.bart_model = bart_model
 		for param in self.bart_model.parameters():
 			param.requires_grad = False
-		for param in self.bart_model.decoder_proj.parameters():
+		
+		for param in self.bart_model.decoder.layers.parameters():
 			param.requires_grad=True
 
 		# self.meta_proj1 = self.bart_model.decoder_proj.clone().detach()
@@ -48,16 +49,15 @@ class FTBart(nn.Module):
 	def parameters(self):
 		# return list(self.meta_proj1.parameters()) + list(self.meta_proj2.parameters()) + list(self.final_proj.parameters())
 		# return list(self.meta_proj1.parameters()) + list(self.final_proj.parameters())
-		return self.bart_model.decoder_proj.parameters()
+		return self.bart_model.decoder.layers.parameters()
 
 
 
 
 class Learner(nn.Module):
 
-	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-5,), model_params=None, num_iters=100000, load_model=False):
+	def __init__(self, process_id, gpu='cpu', world_size=4, optimizer=AdamW, optimizer_sparse=optim.SparseAdam, optim_params=(1e-5,), model_params=None, num_iters=100000, load_model=False, fine_tune=False):
 		super(Learner, self).__init__()
-		fine_tune = False
 		model = BartModel(model_params)
 		if load_model:
 			params = torch.load('../checkpoint-bigseq2seqnaive.pth')['model']
@@ -75,7 +75,6 @@ class Learner(nn.Module):
 				params[k[7:]] = v
 				del params[k]
 			model.load_state_dict(params)
-			# temp = nn.Linear(model
 			self.model = FTBart(model)
 			optim_params = (1e-5,)
 
@@ -251,10 +250,10 @@ class Learner(nn.Module):
 
 class MetaTrainer:
 
-	def __init__(self, world_size, device='cpu', model_params=None, num_iters=25000, load_model=False):
+	def __init__(self, world_size, device='cpu', model_params=None, num_iters=25000, load_model=False, fine_tune=False):
 		self.world_size = world_size
 
-		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters, load_model=load_model) for process_id in range(world_size)]
+		self.meta_learners = [Learner(process_id=process_id, gpu=process_id if device is not 'cpu' else 'cpu', world_size=world_size, model_params=model_params, num_iters=num_iters, load_model=load_model, fine_tune=fine_tune) for process_id in range(world_size)]
 		# gpu backend instead of gloo
 		self.backend = "gloo"
 		self.num_iters = num_iters
