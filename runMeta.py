@@ -16,10 +16,14 @@ from datetime import date
 parser = argparse.ArgumentParser()
 parser.add_argument("--filepath", default='../repo_files', type=str)
 parser.add_argument("--exp_name", default='EditorPairTrain', type=str)
+# ../checkpoint-bigseq2seqnaive.pth
+parser.add_argument("--checkpoint_path", default=None, type=str)
 parser.add_argument("--unique_id", default=str(date.today()), type=str)
 parser.add_argument("--num_layers", default=6, type=int)
 parser.add_argument("--num_heads", default=8, type=int)
 parser.add_argument("--dropout", default=0.1, type=float)
+parser.add_argument("--lr", default=1e-4, type=float)
+parser.add_argument("--meta_lr", default=1e-3, type=float)
 parser.add_argument("--d_word_vec", default=512, type=int)
 parser.add_argument("--inner_dimension", default=2048, type=int)
 parser.add_argument("--meta_batch_size", default=4, type=int)
@@ -29,9 +33,8 @@ parser.add_argument("--meta_retrieve", default=False, action='store_true')
 parser.add_argument("--query_batch_size", default=10, type=int)
 parser.add_argument("--retrieve_context", default=False, action='store_true')
 parser.add_argument("--load_model", default=False, action='store_true')
-parser.add_argument("--fine_tune", default=False, action='store_true')
 parser.add_argument("--n_retrieved", default=1, type=int)
-parser.add_argument("--num_iters", default=100000, type=int)
+parser.add_argument("--num_iterations", default=100000, type=int)
 args = parser.parse_args()
 
 def main(args):
@@ -44,12 +47,9 @@ def main(args):
 	tb = Tensorboard(args.exp_name, unique_name=args.unique_id)
 	repo_files = list(filter(lambda x: True if x.endswith('.csv') else False, next(os.walk(args.filepath))[2]))
 
-
-	# MetaRetrieved
-	# MetaRepo = MetaRetrieved
 	print(len(repo_files))
 	data_loaders = []; validation_loaders = []
-	for dataset in repo_files[num_validation_repos:]:
+	for dataset in repo_files[num_validation_repos:100]:
 		if args.meta_retrieve:
 			temp = MetaRetrieved(args.filepath+'/'+dataset, n_retrieved=args.n_retrieved)
 		else:
@@ -89,8 +89,8 @@ def main(args):
 	
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-	trainer = MetaTrainer(args.meta_batch_size, device=device, model_params=model_params, num_iters=args.num_iters, load_model=args.load_model, fine_tune=args.fine_tune)
-	trainer.train(data_loaders, tb, num_updates=args.num_updates)
+	trainer = MetaTrainer(device=device, lr=args.lr, meta_lr=args.meta_lr, model_params=model_params, tb=tb, checkpoint_path=args.checkpoint_path)
+	trainer.train(data_loaders=data_loaders, num_updates=args.num_updates, num_iterations=args.num_iterations, meta_batch_size=args.meta_batch_size)
 
 if __name__=='__main__':
 	set_start_method('spawn', force=False)
